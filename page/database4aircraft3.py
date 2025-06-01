@@ -55,7 +55,12 @@ def init_db(conn):
     except sqlite3.Error as e:
         st.error(f"数据库初始化错误: {e}")
 
-
+# 初始化session state（放在最前面，在任何使用session_state之前）
+def init_session_state():
+    if 'selected_id' not in st.session_state:
+        st.session_state.selected_id = None
+    if 'records' not in st.session_state:
+        st.session_state.records = []
 # 解析数据文件
 def parse_data_file(uploaded_file):
     """解析上传的文件内容"""
@@ -232,6 +237,7 @@ def generate_download_file(record):
 
 # 主页面
 def main():
+    init_session_state()  # 初始化session state
     st.title("飞机HIRF环境数据库系统")
 
     # 数据库连接
@@ -268,6 +274,7 @@ def main():
         st.header(f"{database_type} - 查询数据")
 
         # 查询条件
+        # 查询条件
         col1, col2, col3 = st.columns(3)
         with col1:
             aircraft_model = st.text_input("飞机型号", "")
@@ -287,21 +294,32 @@ def main():
         # 执行查询
         if st.button("查询"):
             records = query_records(conn, table_name, conditions if conditions else None)
+            st.session_state.records = records  # 保存查询结果
+            st.session_state.selected_id = None  # 重置选择
 
-            if records:
-                st.subheader("查询结果")
-                # 显示简化的记录信息
-                display_cols = ['id', 'aircraft_model', 'current_probe', 'antenna_point', 'frequency_unit',
-                                'upload_time']
-                df = pd.DataFrame(records)[display_cols]
-                st.dataframe(df)
+        # 显示查询结果
+        if st.session_state.records:
+            st.subheader("查询结果")
+            display_cols = ['id', 'aircraft_model', 'current_probe', 'antenna_point', 'frequency_unit', 'upload_time']
+            df = pd.DataFrame(st.session_state.records)[display_cols]
+            st.dataframe(df)
 
-                # 选择要查看的记录
-                record_ids = [str(r['id']) for r in records]
-                selected_id = st.selectbox("选择记录查看详细数据", record_ids)
-                selected_record = next(r for r in records if str(r['id']) == selected_id)
+            # 创建选择框
+            record_ids = [str(r['id']) for r in st.session_state.records]
+            selected_id = st.selectbox(
+                "选择记录查看详细数据",
+                record_ids,
+                index=0
+            )
 
-                # 显示详细信息和数据曲线
+            # 更新选中的ID
+            st.session_state.selected_id = selected_id
+
+            # 显示选中记录的详细信息
+            if st.session_state.selected_id:
+                selected_record = next(
+                    r for r in st.session_state.records if str(r['id']) == st.session_state.selected_id)
+
                 st.subheader("记录详情")
                 st.json({k: v for k, v in selected_record.items() if k != 'data_content'})
 
@@ -310,16 +328,15 @@ def main():
                           f"{database_type} - {selected_record['aircraft_model']}",
                           ylabel)
 
-                # 添加下载按钮
+                # 下载按钮
                 st.subheader("数据下载")
                 filename, file_content = generate_download_file(selected_record)
-                if filename and file_content:
-                    st.download_button(
-                        label="下载数据为TXT文件",
-                        data=file_content,
-                        file_name=filename,
-                        mime="text/plain"
-                    )
+                st.download_button(
+                    label="下载数据为TXT文件",
+                    data=file_content,
+                    file_name=filename,
+                    mime="text/plain"
+                )
             else:
                 st.warning("没有找到匹配的记录")
 
