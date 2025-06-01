@@ -1,0 +1,2226 @@
+* EQUIVALENT CIRCUIT FOR VECTOR FITTED S-MATRIX
+* Created using scikit-rf vectorFitting.py
+
+.SUBCKT s_equivalent p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15 p16
+
+* Port network for port 1
+R_ref_1 p1 a1 50.0
+H_b_1 a1 0 V_c_1 14.142135623730951
+* Differential incident wave a sources for transfer from port 1
+H_p_1 nt_p_1 nts_p_1 H_b_1 3.5355339059327378
+E_p_1 nts_p_1 0 p1 0 0.07071067811865475
+E_n_1 0 nt_n_1 nt_p_1 0 1
+* Current sensor on center node for transfer to port 1
+V_c_1 nt_c_1 0 0
+* Transfer network from port 1 to port 1
+R1_1 nt_n_1 nt_c_1 3.3538953868729466
+X1 nt_n_1 nt_c_1 rl_admittance res=1.45964938772646 ind=1.2631917510792752e-07
+X2 nt_n_1 nt_c_1 rl_admittance res=97.04923337939485 ind=3.709492363265409e-05
+X3 nt_n_1 nt_c_1 rl_admittance res=156.76286526285634 ind=0.00013160461821518717
+X4 nt_n_1 nt_c_1 rl_admittance res=98593.29832132184 ind=3.354489447716232
+X5 nt_n_1 nt_c_1 rl_admittance res=43433.99187832574 ind=14.462142709271719
+X6 nt_n_1 nt_c_1 rl_admittance res=96460.00022571992 ind=374.54047067144694
+* Transfer network from port 2 to port 1
+R1_2 nt_p_2 nt_c_1 3.04535568848627
+X7 nt_n_2 nt_c_1 rl_admittance res=3.890226885181143 ind=3.366632118992503e-07
+X8 nt_n_2 nt_c_1 rl_admittance res=15.556800013295938 ind=5.946242833322661e-06
+X9 nt_n_2 nt_c_1 rl_admittance res=142.6789750493539 ind=0.00011978099537297462
+X10 nt_n_2 nt_c_1 rl_admittance res=123182.490752719 ind=4.191099926758777
+X11 nt_n_2 nt_c_1 rl_admittance res=218770.32854033847 ind=72.84358575117443
+X12 nt_n_2 nt_c_1 rl_admittance res=131455.29545205724 ind=510.4222280287701
+* Transfer network from port 3 to port 1
+R1_3 nt_p_3 nt_c_1 3.7468572780454887
+X13 nt_n_3 nt_c_1 rl_admittance res=5.8738739743108646 ind=5.083295491108174e-07
+X14 nt_n_3 nt_c_1 rl_admittance res=11.748987951217044 ind=4.490790865988466e-06
+X15 nt_n_3 nt_c_1 rl_admittance res=86.8935323427016 ind=7.294833588398205e-05
+X16 nt_n_3 nt_c_1 rl_admittance res=160827.50178347682 ind=5.471915097890231
+X17 nt_n_3 nt_c_1 rl_admittance res=238106.75289629676 ind=79.28200221785094
+X18 nt_n_3 nt_c_1 rl_admittance res=155589.68917609687 ind=604.1326485514688
+* Transfer network from port 4 to port 1
+R1_4 nt_p_4 nt_c_1 104.83218887540028
+X19 nt_n_4 nt_c_1 rl_admittance res=151.96444534335276 ind=1.3151119400944396e-05
+X20 nt_n_4 nt_c_1 rl_admittance res=374.6272697225267 ind=0.00014319299057974163
+X21 nt_n_4 nt_c_1 rl_admittance res=3472.890126522203 ind=0.002915539840624114
+X22 nt_n_4 nt_c_1 rl_admittance res=3795013.215399337 ind=129.11964607890246
+X23 nt_n_4 nt_c_1 rl_admittance res=2875139.713766742 ind=957.3304007163729
+X24 nt_n_4 nt_c_1 rl_admittance res=2263859.7678959826 ind=8790.245708249848
+* Transfer network from port 5 to port 1
+R1_5 nt_n_5 nt_c_1 118.28462738406094
+X25 nt_p_5 nt_c_1 rl_admittance res=13.144090082204471 ind=1.137499615105865e-06
+X26 nt_n_5 nt_c_1 rl_admittance res=16.892890941189545 ind=6.456934048602453e-06
+X27 nt_n_5 nt_c_1 rl_admittance res=118.79948443998401 ind=9.973382897581962e-05
+X28 nt_n_5 nt_c_1 rl_admittance res=367603.2223521381 ind=12.507149586454757
+X29 nt_n_5 nt_c_1 rl_admittance res=440708.42449020065 ind=146.7419376512824
+X30 nt_n_5 nt_c_1 rl_admittance res=255377.69676949465 ind=991.595298810012
+* Transfer network from port 6 to port 1
+R1_6 nt_n_6 nt_c_1 72.4424575429028
+X31 nt_p_6 nt_c_1 rl_admittance res=9.41410109333043 ind=8.147035133857723e-07
+X32 nt_n_6 nt_c_1 rl_admittance res=12.391557828840648 ind=4.736398994039401e-06
+X33 nt_n_6 nt_c_1 rl_admittance res=85.4166426703992 ind=7.170846634508708e-05
+X34 nt_n_6 nt_c_1 rl_admittance res=410011.9842928285 ind=13.950044254174687
+X35 nt_n_6 nt_c_1 rl_admittance res=425814.2983657512 ind=141.78266570259538
+X36 nt_n_6 nt_c_1 rl_admittance res=360779.9113655659 ind=1400.8571168926042
+* Transfer network from port 7 to port 1
+R1_7 nt_n_7 nt_c_1 19.32184401174557
+X37 nt_p_7 nt_c_1 rl_admittance res=19.062468382868545 ind=1.6496806026791944e-06
+X38 nt_n_7 nt_c_1 rl_admittance res=812.0827452998913 ind=0.0003104006736717964
+X39 nt_p_7 nt_c_1 rl_admittance res=1880.9015478254692 ind=0.001579043159787007
+X40 nt_n_7 nt_c_1 rl_admittance res=8046482.837065925 ind=273.76953837368626
+X41 nt_n_7 nt_c_1 rl_admittance res=482467.5676880792 ind=160.64640883220562
+X42 nt_n_7 nt_c_1 rl_admittance res=458928.0249469587 ind=1781.9522917865365
+* Transfer network from port 8 to port 1
+R1_8 nt_n_8 nt_c_1 19.541781356082872
+X43 nt_p_8 nt_c_1 rl_admittance res=23.42460092594991 ind=2.027182891370419e-06
+X44 nt_p_8 nt_c_1 rl_admittance res=130.9258707039883 ind=5.004351921376788e-05
+X45 nt_p_8 nt_c_1 rl_admittance res=1188.2518981292008 ind=0.000997554089959708
+X46 nt_p_8 nt_c_1 rl_admittance res=1127595.3192525695 ind=38.36474348793495
+X47 nt_p_8 nt_c_1 rl_admittance res=1485600.361447964 ind=494.6578361112475
+X48 nt_p_8 nt_c_1 rl_admittance res=1068160.4101846123 ind=4147.515051285234
+* Transfer network from port 9 to port 1
+R1_9 nt_p_9 nt_c_1 3.6593086227110105
+X49 nt_n_9 nt_c_1 rl_admittance res=6.087700052321488 ind=5.268342215465292e-07
+X50 nt_n_9 nt_c_1 rl_admittance res=9.196197459124047 ind=3.515043144374205e-06
+X51 nt_n_9 nt_c_1 rl_admittance res=3606.029838037951 ind=0.003027312490823701
+X52 nt_n_9 nt_c_1 rl_admittance res=69408.93779538703 ind=2.361535250124256
+X53 nt_p_9 nt_c_1 rl_admittance res=64112.16738603606 ind=21.347319784352056
+X54 nt_p_9 nt_c_1 rl_admittance res=145905.29921946052 ind=566.529538826851
+* Transfer network from port 10 to port 1
+R1_10 nt_n_10 nt_c_1 27.779334279237776
+X55 nt_p_10 nt_c_1 rl_admittance res=11.057129775619096 ind=9.56892472988353e-07
+X56 nt_n_10 nt_c_1 rl_admittance res=24.818858743866798 ind=9.486459992468504e-06
+X57 nt_n_10 nt_c_1 rl_admittance res=70.6385066266567 ind=5.930201441715304e-05
+X58 nt_p_10 nt_c_1 rl_admittance res=126073.39196982291 ind=4.2894585149415185
+X59 nt_n_10 nt_c_1 rl_admittance res=688192.2608582126 ind=229.146211470247
+X60 nt_p_10 nt_c_1 rl_admittance res=1372856.488670801 ind=5330.606616503086
+* Transfer network from port 11 to port 1
+R1_11 nt_n_11 nt_c_1 9.441305131939423
+X61 nt_p_11 nt_c_1 rl_admittance res=3.840528296153842 ind=3.323622579696666e-07
+X62 nt_n_11 nt_c_1 rl_admittance res=7.976722440445454 ind=3.0489257819323063e-06
+X63 nt_n_11 nt_c_1 rl_admittance res=34.36928782248356 ind=2.885349789072499e-05
+X64 nt_p_11 nt_c_1 rl_admittance res=112606.84585999754 ind=3.8312794338910976
+X65 nt_n_11 nt_c_1 rl_admittance res=152717.6382835292 ind=50.85013335330747
+X66 nt_n_11 nt_c_1 rl_admittance res=208977.02152921798 ind=811.4280719460389
+* Transfer network from port 12 to port 1
+R1_12 nt_n_12 nt_c_1 35.475285257405694
+X67 nt_p_12 nt_c_1 rl_admittance res=35.18941251886594 ind=3.045318690428376e-06
+X68 nt_p_12 nt_c_1 rl_admittance res=108.33297878176782 ind=4.140788582118599e-05
+X69 nt_n_12 nt_c_1 rl_admittance res=105.57687830291475 ind=8.863326616356852e-05
+X70 nt_p_12 nt_c_1 rl_admittance res=130590.46163898426 ind=4.4431450514281865
+X71 nt_p_12 nt_c_1 rl_admittance res=750538.9788218441 ind=249.9056925506563
+X72 nt_p_12 nt_c_1 rl_admittance res=348752.73241566 ind=1354.157290496104
+* Transfer network from port 13 to port 1
+R1_13 nt_n_13 nt_c_1 10.381819560422521
+X73 nt_p_13 nt_c_1 rl_admittance res=6.18153988715201 ind=5.349551926699571e-07
+X74 nt_n_13 nt_c_1 rl_admittance res=21.27203108582901 ind=8.130763543030797e-06
+X75 nt_n_13 nt_c_1 rl_admittance res=54.23247325349471 ind=4.55289199098521e-05
+X76 nt_p_13 nt_c_1 rl_admittance res=137760.84377072466 ind=4.687106574235001
+X77 nt_n_13 nt_c_1 rl_admittance res=239930.54276114868 ind=79.88926644010112
+X78 nt_n_13 nt_c_1 rl_admittance res=308536.0420218997 ind=1198.001597839258
+* Transfer network from port 14 to port 1
+R1_14 nt_n_14 nt_c_1 9.883312889626678
+X79 nt_p_14 nt_c_1 rl_admittance res=6.230479595823449 ind=5.391904725127606e-07
+X80 nt_n_14 nt_c_1 rl_admittance res=45.945464466382624 ind=1.7561637905829617e-05
+X81 nt_n_14 nt_c_1 rl_admittance res=26.62259521759772 ind=2.235004108680054e-05
+X82 nt_p_14 nt_c_1 rl_admittance res=79125.60781692133 ind=2.692130408305799
+X83 nt_n_14 nt_c_1 rl_admittance res=192515.04671157672 ind=64.10140903061422
+X84 nt_n_14 nt_c_1 rl_admittance res=1109779.0980220176 ind=4309.11450074484
+* Transfer network from port 15 to port 1
+R1_15 nt_p_15 nt_c_1 33.871040684297164
+X85 nt_n_15 nt_c_1 rl_admittance res=49.134056432357596 ind=4.252098846771065e-06
+X86 nt_n_15 nt_c_1 rl_admittance res=119.04611850056165 ind=4.550274660366163e-05
+X87 nt_n_15 nt_c_1 rl_admittance res=1299.6670614868272 ind=0.0010910886780936832
+X88 nt_n_15 nt_c_1 rl_admittance res=1780459.8784894925 ind=60.577483218081
+X89 nt_n_15 nt_c_1 rl_admittance res=2283776.6032266147 ind=760.4252274228742
+X90 nt_n_15 nt_c_1 rl_admittance res=1420993.6451905037 ind=5517.516353362771
+* Transfer network from port 16 to port 1
+R1_16 nt_n_16 nt_c_1 21.51831288318973
+X91 nt_p_16 nt_c_1 rl_admittance res=22.481867549072497 ind=1.9455980234458334e-06
+X92 nt_p_16 nt_c_1 rl_admittance res=572.7259208389377 ind=0.00021891181986886872
+X93 nt_p_16 nt_c_1 rl_admittance res=4032.6856870689953 ind=0.0033854960442236486
+X94 nt_p_16 nt_c_1 rl_admittance res=1289360.3371579263 ind=43.86855616904287
+X95 nt_n_16 nt_c_1 rl_admittance res=679040.5270440491 ind=226.09897416292165
+X96 nt_n_16 nt_c_1 rl_admittance res=647541.2125378067 ind=2514.3104909344765
+
+* Port network for port 2
+R_ref_2 p2 a2 50.0
+H_b_2 a2 0 V_c_2 14.142135623730951
+* Differential incident wave a sources for transfer from port 2
+H_p_2 nt_p_2 nts_p_2 H_b_2 3.5355339059327378
+E_p_2 nts_p_2 0 p2 0 0.07071067811865475
+E_n_2 0 nt_n_2 nt_p_2 0 1
+* Current sensor on center node for transfer to port 2
+V_c_2 nt_c_2 0 0
+* Transfer network from port 1 to port 2
+R2_1 nt_p_1 nt_c_2 3.0459632642509558
+X97 nt_n_1 nt_c_2 rl_admittance res=3.891160608981584 ind=3.3674401707153495e-07
+X98 nt_n_1 nt_c_2 rl_admittance res=15.557578119066607 ind=5.946540247049035e-06
+X99 nt_n_1 nt_c_2 rl_admittance res=142.69161124749976 ind=0.00011979160363807547
+X100 nt_n_1 nt_c_2 rl_admittance res=123095.32526051851 ind=4.1881342513146045
+X101 nt_n_1 nt_c_2 rl_admittance res=218193.8420963729 ind=72.65163403635286
+X102 nt_n_1 nt_c_2 rl_admittance res=131460.30914343148 ind=510.4416954797625
+* Transfer network from port 2 to port 2
+R2_2 nt_p_2 nt_c_2 10.547077834513692
+X103 nt_n_2 nt_c_2 rl_admittance res=0.9959152140699346 ind=8.618726481617573e-08
+X104 nt_n_2 nt_c_2 rl_admittance res=14.04769036000861 ind=5.369419035826493e-06
+X105 nt_n_2 nt_c_2 rl_admittance res=51.38413140465554 ind=4.313769708463599e-05
+X106 nt_n_2 nt_c_2 rl_admittance res=35496.2449084822 ind=1.2077066190745749
+X107 nt_n_2 nt_c_2 rl_admittance res=86487.14065893825 ind=28.79747673735201
+X108 nt_n_2 nt_c_2 rl_admittance res=96490.74679408413 ind=374.65985522628534
+* Transfer network from port 3 to port 2
+R2_3 nt_p_3 nt_c_2 2.4303192640517604
+X109 nt_n_3 nt_c_2 rl_admittance res=4.358815392227141 ind=3.772152199176296e-07
+X110 nt_n_3 nt_c_2 rl_admittance res=6.301778507515917 ind=2.40871549775514e-06
+X111 nt_n_3 nt_c_2 rl_admittance res=42.87360590720301 ind=3.599299188277058e-05
+X112 nt_n_3 nt_c_2 rl_admittance res=69271.62766784166 ind=2.3568634784951707
+X113 nt_n_3 nt_c_2 rl_admittance res=77608.01340632667 ind=25.841008775098423
+X114 nt_n_3 nt_c_2 rl_admittance res=177916.2399411782 ind=690.8234718197217
+* Transfer network from port 4 to port 2
+R2_4 nt_p_4 nt_c_2 23.62682158408959
+X115 nt_n_4 nt_c_2 rl_admittance res=25.63701338380255 ind=2.218646758669229e-06
+X116 nt_n_4 nt_c_2 rl_admittance res=407.0640525952719 ind=0.0001555912336328283
+X117 nt_n_4 nt_c_2 rl_admittance res=1163.5014053349926 ind=0.0009767757050446468
+X118 nt_n_4 nt_c_2 rl_admittance res=986425.272266861 ind=33.56164387558785
+X119 nt_n_4 nt_c_2 rl_admittance res=1357221.0009934541 ind=451.91157790363724
+X120 nt_n_4 nt_c_2 rl_admittance res=2282964.571808527 ind=8864.42694640811
+* Transfer network from port 5 to port 2
+R2_5 nt_p_5 nt_c_2 4.764331586940668
+X121 nt_n_5 nt_c_2 rl_admittance res=12.247247841373966 ind=1.0598862012160324e-06
+X122 nt_n_5 nt_c_2 rl_admittance res=9.028305687492924 ind=3.450870226873037e-06
+X123 nt_n_5 nt_c_2 rl_admittance res=57.29027780186463 ind=4.809598960132601e-05
+X124 nt_n_5 nt_c_2 rl_admittance res=109867.40069563875 ind=3.738073911275454
+X125 nt_n_5 nt_c_2 rl_admittance res=116243.06957137742 ind=38.70525798813277
+X126 nt_n_5 nt_c_2 rl_admittance res=317364.36406443873 ind=1232.280717529432
+* Transfer network from port 6 to port 2
+R2_6 nt_p_6 nt_c_2 27.41678864800031
+X127 nt_p_6 nt_c_2 rl_admittance res=7.038230495170693 ind=6.090938535275389e-07
+X128 nt_n_6 nt_c_2 rl_admittance res=6.468039465332147 ind=2.4722650727340027e-06
+X129 nt_n_6 nt_c_2 rl_admittance res=41.79970755927321 ind=3.50914391978012e-05
+X130 nt_n_6 nt_c_2 rl_admittance res=111927.47364527665 ind=3.8081648108471904
+X131 nt_n_6 nt_c_2 rl_admittance res=108481.62665375565 ind=36.120943485819545
+X132 nt_n_6 nt_c_2 rl_admittance res=389505.59130756935 ind=1512.3948492237157
+* Transfer network from port 7 to port 2
+R2_7 nt_p_7 nt_c_2 20.87333111550723
+X133 nt_n_7 nt_c_2 rl_admittance res=19.050606274185977 ind=1.6486540467155348e-06
+X134 nt_p_7 nt_c_2 rl_admittance res=236.66647763376977 ind=9.046052821369201e-05
+X135 nt_p_7 nt_c_2 rl_admittance res=2754.1525771260503 ind=0.0023121496140765516
+X136 nt_n_7 nt_c_2 rl_admittance res=2234296.2698296495 ind=76.01858734646311
+X137 nt_n_7 nt_c_2 rl_admittance res=407235.74176222284 ind=135.5965951778047
+X138 nt_n_7 nt_c_2 rl_admittance res=583160.919241952 ind=2264.33096266815
+* Transfer network from port 8 to port 2
+R2_8 nt_n_8 nt_c_2 11.818035012867325
+X139 nt_p_8 nt_c_2 rl_admittance res=14.192755510492825 ind=1.2282519238311235e-06
+X140 nt_p_8 nt_c_2 rl_admittance res=80.97888330604401 ind=3.0952387643827476e-05
+X141 nt_p_8 nt_c_2 rl_admittance res=553.8612414283433 ind=0.00046497425968927854
+X142 nt_p_8 nt_c_2 rl_admittance res=873641.6579781636 ind=29.72435016041334
+X143 nt_p_8 nt_c_2 rl_admittance res=708360.9926404782 ind=235.86175993093786
+X144 nt_p_8 nt_c_2 rl_admittance res=1389123.4431879479 ind=5393.768888812709
+* Transfer network from port 9 to port 2
+R2_9 nt_p_9 nt_c_2 15.97805614500749
+X145 nt_p_9 nt_c_2 rl_admittance res=18.232531167263488 ind=1.5778572008759061e-06
+X146 nt_n_9 nt_c_2 rl_admittance res=9.049367368252575 ind=3.45892058865488e-06
+X147 nt_n_9 nt_c_2 rl_admittance res=144.0664498815522 ind=0.0001209457999028514
+X148 nt_n_9 nt_c_2 rl_admittance res=405872.62136569957 ind=13.809208624413442
+X149 nt_p_9 nt_c_2 rl_admittance res=79091.84697236569 ind=26.335078324334873
+X150 nt_p_9 nt_c_2 rl_admittance res=307734.6030500345 ind=1194.8897242228943
+* Transfer network from port 10 to port 2
+R2_10 nt_n_10 nt_c_2 15.886289433200446
+X151 nt_p_10 nt_c_2 rl_admittance res=5.04213529631103 ind=4.3635024737319606e-07
+X152 nt_n_10 nt_c_2 rl_admittance res=9.471133353361333 ind=3.620131310920948e-06
+X153 nt_n_10 nt_c_2 rl_admittance res=33.533537211682095 ind=2.8151873562328023e-05
+X154 nt_p_10 nt_c_2 rl_admittance res=44355.43862629073 ind=1.5091274290855106
+X155 nt_n_10 nt_c_2 rl_admittance res=207245.5307931308 ind=69.00619336544754
+X156 nt_p_10 nt_c_2 rl_admittance res=171075.74787866502 ind=664.2628134045992
+* Transfer network from port 11 to port 2
+R2_11 nt_n_11 nt_c_2 5.08885160491587
+X157 nt_p_11 nt_c_2 rl_admittance res=2.1172844080427162 ind=1.8323141306517206e-07
+X158 nt_n_11 nt_c_2 rl_admittance res=4.56471672834201 ind=1.7447620403202131e-06
+X159 nt_n_11 nt_c_2 rl_admittance res=17.630816473539628 ind=1.4801317052553205e-05
+X160 nt_p_11 nt_c_2 rl_admittance res=70816.65103708635 ind=2.4094305867758505
+X161 nt_n_11 nt_c_2 rl_admittance res=61235.428696440846 ind=20.389456975362346
+X162 nt_n_11 nt_c_2 rl_admittance res=505663.15993938426 ind=1963.4181783301424
+* Transfer network from port 12 to port 2
+R2_12 nt_n_12 nt_c_2 28.445072999519315
+X163 nt_p_12 nt_c_2 rl_admittance res=9.614975494474253 ind=8.320873377932963e-07
+X164 nt_n_12 nt_c_2 rl_admittance res=20.7345115521193 ind=7.925308586204161e-06
+X165 nt_n_12 nt_c_2 rl_admittance res=48.43972777913935 ind=4.06658290541702e-05
+X166 nt_p_12 nt_c_2 rl_admittance res=48611.7941904336 ind=1.6539435582620894
+X167 nt_n_12 nt_c_2 rl_admittance res=312838.9908346948 ind=104.16546890624653
+X168 nt_p_12 nt_c_2 rl_admittance res=152750.66960235516 ind=593.1091390666414
+* Transfer network from port 13 to port 2
+R2_13 nt_n_13 nt_c_2 7.615794489258782
+X169 nt_p_13 nt_c_2 rl_admittance res=3.1942387910154375 ind=2.764318695788258e-07
+X170 nt_n_13 nt_c_2 rl_admittance res=6.80075102696094 ind=2.59943671068062e-06
+X171 nt_n_13 nt_c_2 rl_admittance res=28.811968541817745 ind=2.41880506178292e-05
+X172 nt_p_13 nt_c_2 rl_admittance res=161361.48868053601 ind=5.490083203044457
+X173 nt_n_13 nt_c_2 rl_admittance res=92408.64183430134 ind=30.769148954152225
+X174 nt_n_13 nt_c_2 rl_admittance res=461145.22572863864 ind=1790.5613672831182
+* Transfer network from port 14 to port 2
+R2_14 nt_n_14 nt_c_2 4.986207686124209
+X175 nt_p_14 nt_c_2 rl_admittance res=2.9530196325851725 ind=2.5555657899921583e-07
+X176 nt_n_14 nt_c_2 rl_admittance res=15.336592563330665 ind=5.862073404514606e-06
+X177 nt_n_14 nt_c_2 rl_admittance res=13.719181090274752 ind=1.151744443164643e-05
+X178 nt_p_14 nt_c_2 rl_admittance res=42884.06537149832 ind=1.4590661557445253
+X179 nt_n_14 nt_c_2 rl_admittance res=71759.09996603894 ind=23.893505973500552
+X180 nt_p_14 nt_c_2 rl_admittance res=515886.0494190054 ind=2003.112205163646
+* Transfer network from port 15 to port 2
+R2_15 nt_p_15 nt_c_2 16.765557547591367
+X181 nt_n_15 nt_c_2 rl_admittance res=22.766310346178468 ind=1.9702139207962125e-06
+X182 nt_n_15 nt_c_2 rl_admittance res=71.24114694686011 ind=2.7230353228710304e-05
+X183 nt_n_15 nt_c_2 rl_admittance res=594.4491221255431 ind=0.000499048353285118
+X184 nt_n_15 nt_c_2 rl_admittance res=1172655.410415944 ind=39.897845665205175
+X185 nt_n_15 nt_c_2 rl_admittance res=955464.5948497324 ind=318.13942782608365
+X186 nt_n_15 nt_c_2 rl_admittance res=1797455.8436076015 ind=6979.265561896895
+* Transfer network from port 16 to port 2
+R2_16 nt_p_16 nt_c_2 25.04545146746992
+X187 nt_n_16 nt_c_2 rl_admittance res=23.081041510596485 ind=1.9974509966339695e-06
+X188 nt_p_16 nt_c_2 rl_admittance res=337.31708248777767 ind=0.00012893199646366765
+X189 nt_p_16 nt_c_2 rl_admittance res=2289.655141775008 ind=0.0019221975196260827
+X190 nt_n_16 nt_c_2 rl_admittance res=4121930.7185884365 ind=140.24252494991404
+X191 nt_n_16 nt_c_2 rl_admittance res=609282.1297040049 ind=202.8716387541025
+X192 nt_n_16 nt_c_2 rl_admittance res=798477.1745790045 ind=3100.3733784720234
+
+* Port network for port 3
+R_ref_3 p3 a3 50.0
+H_b_3 a3 0 V_c_3 14.142135623730951
+* Differential incident wave a sources for transfer from port 3
+H_p_3 nt_p_3 nts_p_3 H_b_3 3.5355339059327378
+E_p_3 nts_p_3 0 p3 0 0.07071067811865475
+E_n_3 0 nt_n_3 nt_p_3 0 1
+* Current sensor on center node for transfer to port 3
+V_c_3 nt_c_3 0 0
+* Transfer network from port 1 to port 3
+R3_1 nt_p_1 nt_c_3 3.7477069562817946
+X193 nt_n_1 nt_c_3 rl_admittance res=5.876630121482709 ind=5.085680681963944e-07
+X194 nt_n_1 nt_c_3 rl_admittance res=11.74556966628553 ind=4.489484302154072e-06
+X195 nt_n_1 nt_c_3 rl_admittance res=86.93474902338654 ind=7.298293786396336e-05
+X196 nt_n_1 nt_c_3 rl_admittance res=160462.59147975393 ind=5.459499570830653
+X197 nt_n_1 nt_c_3 rl_admittance res=237715.27374737817 ind=79.15165206870451
+X198 nt_n_1 nt_c_3 rl_admittance res=155584.19795165982 ind=604.1113269074672
+* Transfer network from port 2 to port 3
+R3_2 nt_p_2 nt_c_3 2.430422664037426
+X199 nt_n_2 nt_c_3 rl_admittance res=4.359519007997623 ind=3.7727611136489595e-07
+X200 nt_n_2 nt_c_3 rl_admittance res=6.300975626217561 ind=2.408408614131112e-06
+X201 nt_n_2 nt_c_3 rl_admittance res=42.87494365312972 ind=3.599411493918868e-05
+X202 nt_n_2 nt_c_3 rl_admittance res=69139.254110763 ind=2.3523596662894986
+X203 nt_n_2 nt_c_3 rl_admittance res=77540.27962727332 ind=25.818455573411324
+X204 nt_n_2 nt_c_3 rl_admittance res=178176.70246831203 ind=691.8348107921112
+* Transfer network from port 3 to port 3
+R3_3 nt_n_3 nt_c_3 25.66832607310577
+X205 nt_n_3 nt_c_3 rl_admittance res=1.377549342017757 ind=1.1921417431975877e-07
+X206 nt_n_3 nt_c_3 rl_admittance res=5.129755217500754 ind=1.960735509403834e-06
+X207 nt_n_3 nt_c_3 rl_admittance res=24.92395384392499 ind=2.0924007892702698e-05
+X208 nt_n_3 nt_c_3 rl_admittance res=106836.08149401577 ind=3.6349378112804627
+X209 nt_n_3 nt_c_3 rl_admittance res=32077.282430323983 ind=10.680718399831367
+X210 nt_n_3 nt_c_3 rl_admittance res=840746.405387372 ind=3264.498793823875
+* Transfer network from port 4 to port 3
+R3_4 nt_p_4 nt_c_3 58.14197094625899
+X211 nt_n_4 nt_c_3 rl_admittance res=100.28689092239807 ind=8.678904291658604e-06
+X212 nt_n_4 nt_c_3 rl_admittance res=161.13970565392353 ind=6.159208957429814e-05
+X213 nt_n_4 nt_c_3 rl_admittance res=980.3299068070418 ind=0.0008230006697947235
+X214 nt_n_4 nt_c_3 rl_admittance res=1686409.9872590562 ind=57.37757639821625
+X215 nt_n_4 nt_c_3 rl_admittance res=1234261.9189744375 ind=410.9701006260803
+X216 nt_n_4 nt_c_3 rl_admittance res=3133546.514975063 ind=12167.115735468296
+* Transfer network from port 5 to port 3
+R3_5 nt_p_5 nt_c_3 3.4387886474355525
+X217 nt_n_5 nt_c_3 rl_admittance res=9.954521371370433 ind=8.61471897840028e-07
+X218 nt_n_5 nt_c_3 rl_admittance res=6.132383460666117 ind=2.343967986540102e-06
+X219 nt_n_5 nt_c_3 rl_admittance res=36.693875370882786 ind=3.0805021654352865e-05
+X220 nt_n_5 nt_c_3 rl_admittance res=166750.88875675265 ind=5.673449476340946
+X221 nt_n_5 nt_c_3 rl_admittance res=77587.20783582964 ind=25.834081179529527
+X222 nt_n_5 nt_c_3 rl_admittance res=12669901.122960567 ind=49195.425242068806
+* Transfer network from port 6 to port 3
+R3_6 nt_p_6 nt_c_3 2.143972863532729
+X223 nt_n_6 nt_c_3 rl_admittance res=4.952253487299445 ind=4.2857180683328234e-07
+X224 nt_n_6 nt_c_3 rl_admittance res=4.411422901542063 ind=1.6861688644599632e-06
+X225 nt_n_6 nt_c_3 rl_admittance res=26.470803765192514 ind=2.2222610039220363e-05
+X226 nt_n_6 nt_c_3 rl_admittance res=125398.83088386382 ind=4.266507583354717
+X227 nt_n_6 nt_c_3 rl_admittance res=55755.177682745074 ind=18.564707077523703
+X228 nt_n_6 nt_c_3 rl_admittance res=1466232.611875731 ind=5693.172831025282
+* Transfer network from port 7 to port 3
+R3_7 nt_p_7 nt_c_3 68.68441776074182
+X229 nt_n_7 nt_c_3 rl_admittance res=44.99968957199832 ind=3.8943075745754935e-06
+X230 nt_p_7 nt_c_3 rl_admittance res=141.26598878729695 ind=5.3995800723849314e-05
+X231 nt_p_7 nt_c_3 rl_admittance res=1698.321513691626 ind=0.001425764667169447
+X232 nt_n_7 nt_c_3 rl_admittance res=3357374.4673783123 ind=114.22964252750704
+X233 nt_n_7 nt_c_3 rl_admittance res=382401.33465908497 ind=127.32752470802461
+X234 nt_n_7 nt_c_3 rl_admittance res=612202.0467965793 ind=2377.0935332433814
+* Transfer network from port 8 to port 3
+R3_8 nt_n_8 nt_c_3 9.86146615374017
+X235 nt_p_8 nt_c_3 rl_admittance res=11.971011230542697 ind=1.0359804735061978e-06
+X236 nt_p_8 nt_c_3 rl_admittance res=67.66036540496299 ind=2.5861678657911547e-05
+X237 nt_p_8 nt_c_3 rl_admittance res=323.8914914078031 ind=0.00027191143768900793
+X238 nt_p_8 nt_c_3 rl_admittance res=15861936.267292377 ind=539.6786468748529
+X239 nt_p_8 nt_c_3 rl_admittance res=573730.5298702467 ind=191.03408277308517
+X240 nt_p_8 nt_c_3 rl_admittance res=2269427.5789081175 ind=8811.864727037064
+* Transfer network from port 9 to port 3
+R3_9 nt_p_9 nt_c_3 78.04059741568346
+X241 nt_p_9 nt_c_3 rl_admittance res=8.017297084550295 ind=6.938230254684789e-07
+X242 nt_n_9 nt_c_3 rl_admittance res=8.051126868427417 ind=3.0773652293943226e-06
+X243 nt_n_9 nt_c_3 rl_admittance res=74.89463281686152 ind=6.287509188928497e-05
+X244 nt_p_9 nt_c_3 rl_admittance res=964942.2614279041 ind=32.830716577369344
+X245 nt_p_9 nt_c_3 rl_admittance res=100443.12703111836 ind=33.44437788170292
+X246 nt_p_9 nt_c_3 rl_admittance res=309456.8551674694 ind=1201.5769844050374
+* Transfer network from port 10 to port 3
+R3_10 nt_n_10 nt_c_3 8.955946579790604
+X247 nt_p_10 nt_c_3 rl_admittance res=3.9602604848515797 ind=3.427239732126146e-07
+X248 nt_n_10 nt_c_3 rl_admittance res=10.3510933026279 ind=3.956476544996418e-06
+X249 nt_n_10 nt_c_3 rl_admittance res=22.591593764153497 ind=1.896595898026425e-05
+X250 nt_p_10 nt_c_3 rl_admittance res=41528.85586733179 ind=1.4129571801998024
+X251 nt_n_10 nt_c_3 rl_admittance res=136868.30697107635 ind=45.57280835105263
+X252 nt_p_10 nt_c_3 rl_admittance res=212971.89771608185 ind=826.9396083735828
+* Transfer network from port 11 to port 3
+R3_11 nt_n_11 nt_c_3 4.350747034120452
+X253 nt_p_11 nt_c_3 rl_admittance res=1.5686486388540355 ind=1.3575205371945707e-07
+X254 nt_n_11 nt_c_3 rl_admittance res=3.1235092489064096 ind=1.193892347414177e-06
+X255 nt_n_11 nt_c_3 rl_admittance res=11.428339408024726 ind=9.59425079469403e-06
+X256 nt_p_11 nt_c_3 rl_admittance res=36658.20147561181 ind=1.2472404526059149
+X257 nt_n_11 nt_c_3 rl_admittance res=45944.223644443206 ind=15.297970328723247
+X258 nt_p_11 nt_c_3 rl_admittance res=287049.66485193494 ind=1114.573049223963
+* Transfer network from port 12 to port 3
+R3_12 nt_n_12 nt_c_3 14.329935290849065
+X259 nt_p_12 nt_c_3 rl_admittance res=6.941107644376695 ind=6.006887676900847e-07
+X260 nt_n_12 nt_c_3 rl_admittance res=22.825842368591946 ind=8.724673550009635e-06
+X261 nt_n_12 nt_c_3 rl_admittance res=32.79078275024567 ind=2.7528320802169786e-05
+X262 nt_p_12 nt_c_3 rl_admittance res=48998.60200807713 ind=1.667104115467008
+X263 nt_n_12 nt_c_3 rl_admittance res=201841.35370529987 ind=67.20677367385368
+X264 nt_p_12 nt_c_3 rl_admittance res=179535.69725261704 ind=697.1115943807756
+* Transfer network from port 13 to port 3
+R3_13 nt_n_13 nt_c_3 5.295425811639192
+X265 nt_p_13 nt_c_3 rl_admittance res=2.1848355737144547 ind=1.8907734264044075e-07
+X266 nt_n_13 nt_c_3 rl_admittance res=4.644355181342315 ind=1.7752020781175263e-06
+X267 nt_n_13 nt_c_3 rl_admittance res=18.676046118047125 ind=1.5678801959976608e-05
+X268 nt_p_13 nt_c_3 rl_admittance res=61739.41612811955 ind=2.1005912514963496
+X269 nt_n_13 nt_c_3 rl_admittance res=60110.53064906304 ind=20.01490157782641
+X270 nt_p_13 nt_c_3 rl_admittance res=454963.09683712537 ind=1766.557039485475
+* Transfer network from port 14 to port 3
+R3_14 nt_n_14 nt_c_3 3.61445940214726
+X271 nt_p_14 nt_c_3 rl_admittance res=1.7631872250906881 ind=1.5258757185600945e-07
+X272 nt_n_14 nt_c_3 rl_admittance res=5.804323898047694 ind=2.218574472356238e-06
+X273 nt_n_14 nt_c_3 rl_admittance res=8.458098461044234 ind=7.100691971441877e-06
+X274 nt_p_14 nt_c_3 rl_admittance res=24688.618191683723 ind=0.8399932917629945
+X275 nt_n_14 nt_c_3 rl_admittance res=48594.04701959694 ind=16.180277529801874
+X276 nt_p_14 nt_c_3 rl_admittance res=136182.73882197312 ind=528.7782187057098
+* Transfer network from port 15 to port 3
+R3_15 nt_p_15 nt_c_3 13.841830535471285
+X277 nt_n_15 nt_c_3 rl_admittance res=19.3439199607582 ind=1.6740376376293629e-06
+X278 nt_n_15 nt_c_3 rl_admittance res=56.58828397412394 ind=2.162962034245963e-05
+X279 nt_n_15 nt_c_3 rl_admittance res=347.7374320746704 ind=0.0002919304384401294
+X280 nt_n_15 nt_c_3 rl_admittance res=25342963.830817945 ind=862.2564230204686
+X281 nt_n_15 nt_c_3 rl_admittance res=751867.3904251931 ind=250.34801151222229
+X282 nt_n_15 nt_c_3 rl_admittance res=3061084.728736773 ind=11885.756918758007
+* Transfer network from port 16 to port 3
+R3_16 nt_p_16 nt_c_3 77.84059267115276
+X283 nt_n_16 nt_c_3 rl_admittance res=49.82530037083787 ind=4.31191962622769e-06
+X284 nt_p_16 nt_c_3 rl_admittance res=149.87652138215964 ind=5.728698642332055e-05
+X285 nt_p_16 nt_c_3 rl_admittance res=1804.4449494163216 ind=0.0015148567759339438
+X286 nt_p_16 nt_c_3 rl_admittance res=26626200.41680947 ind=905.9166277191996
+X287 nt_n_16 nt_c_3 rl_admittance res=529213.382441097 ind=176.21128359465362
+X288 nt_n_16 nt_c_3 rl_admittance res=873077.5224044587 ind=3390.0359258638614
+
+* Port network for port 4
+R_ref_4 p4 a4 50.0
+H_b_4 a4 0 V_c_4 14.142135623730951
+* Differential incident wave a sources for transfer from port 4
+H_p_4 nt_p_4 nts_p_4 H_b_4 3.5355339059327378
+E_p_4 nts_p_4 0 p4 0 0.07071067811865475
+E_n_4 0 nt_n_4 nt_p_4 0 1
+* Current sensor on center node for transfer to port 4
+V_c_4 nt_c_4 0 0
+* Transfer network from port 1 to port 4
+R4_1 nt_p_1 nt_c_4 104.92271009138472
+X289 nt_n_1 nt_c_4 rl_admittance res=151.689792735052 ind=1.3127350754025815e-05
+X290 nt_n_1 nt_c_4 rl_admittance res=376.9008514385278 ind=0.00014406201692019667
+X291 nt_n_1 nt_c_4 rl_admittance res=3503.811993561024 ind=0.0029414991805438153
+X292 nt_n_1 nt_c_4 rl_admittance res=3780203.6691223616 ind=128.61577342673016
+X293 nt_n_1 nt_c_4 rl_admittance res=2871315.337146685 ind=956.0570045107419
+X294 nt_n_1 nt_c_4 rl_admittance res=2261745.7705444037 ind=8782.037357003675
+* Transfer network from port 2 to port 4
+R4_2 nt_p_2 nt_c_4 23.62174302618051
+X295 nt_n_2 nt_c_4 rl_admittance res=25.609697935323226 ind=2.216282858852859e-06
+X296 nt_n_2 nt_c_4 rl_admittance res=411.19346952586966 ind=0.0001571696119502446
+X297 nt_n_2 nt_c_4 rl_admittance res=1171.2783501170177 ind=0.0009833045589744526
+X298 nt_n_2 nt_c_4 rl_admittance res=983810.7750794349 ind=33.47268952092449
+X299 nt_n_2 nt_c_4 rl_admittance res=1360245.8487865755 ind=452.9187563499678
+X300 nt_n_2 nt_c_4 rl_admittance res=2278971.034802346 ind=8848.920609828814
+* Transfer network from port 3 to port 4
+R4_3 nt_p_3 nt_c_4 58.05807012875183
+X301 nt_n_3 nt_c_4 rl_admittance res=99.62112629631521 ind=8.621288511396595e-06
+X302 nt_n_3 nt_c_4 rl_admittance res=161.9573820980195 ind=6.190462831565413e-05
+X303 nt_n_3 nt_c_4 rl_admittance res=988.6554853245523 ind=0.0008299901094198562
+X304 nt_n_3 nt_c_4 rl_admittance res=1678246.0287768312 ind=57.09980992679783
+X305 nt_n_3 nt_c_4 rl_admittance res=1238943.674347752 ind=412.5289767829956
+X306 nt_n_3 nt_c_4 rl_admittance res=3118975.674516276 ind=12110.539232972524
+* Transfer network from port 4 to port 4
+R4_4 nt_p_4 nt_c_4 1.1462887129259913
+X307 nt_p_4 nt_c_4 rl_admittance res=45.956806615139506 ind=3.977137215986607e-06
+X308 nt_n_4 nt_c_4 rl_admittance res=520.5635945503958 ind=0.00019897392399069406
+X309 nt_p_4 nt_c_4 rl_admittance res=6523.310366482628 ind=0.005476410301895222
+X310 nt_n_4 nt_c_4 rl_admittance res=576248.794599818 ind=19.606002980491137
+X311 nt_p_4 nt_c_4 rl_admittance res=299694.75479400245 ind=99.78885489486653
+X312 nt_n_4 nt_c_4 rl_admittance res=24489.112667576203 ind=95.08774376297828
+* Transfer network from port 5 to port 4
+R4_5 nt_p_5 nt_c_4 76.9802213003265
+X313 nt_n_5 nt_c_4 rl_admittance res=123.48184572040799 ind=1.0686213431365074e-05
+X314 nt_n_5 nt_c_4 rl_admittance res=243.14134004738582 ind=9.293540120754736e-05
+X315 nt_n_5 nt_c_4 rl_admittance res=1288.6444854590293 ind=0.0010818350713325804
+X316 nt_n_5 nt_c_4 rl_admittance res=2679848.355264406 ind=91.17783036243216
+X317 nt_n_5 nt_c_4 rl_admittance res=1947355.3196666092 ind=648.4076024504602
+X318 nt_n_5 nt_c_4 rl_admittance res=5429042.173427813 ind=21080.199110227735
+* Transfer network from port 6 to port 4
+R4_6 nt_p_6 nt_c_4 156.34584726619613
+X319 nt_p_6 nt_c_4 rl_admittance res=1497.9094229371499 ind=0.00012963022783610522
+X320 nt_n_6 nt_c_4 rl_admittance res=166.27610778966906 ind=6.355536572123301e-05
+X321 nt_n_6 nt_c_4 rl_admittance res=954.0475770129684 ind=0.0008009362862906654
+X322 nt_n_6 nt_c_4 rl_admittance res=2408668.4850400374 ind=81.95134105140386
+X323 nt_n_6 nt_c_4 rl_admittance res=1834320.3159015165 ind=610.7705287001749
+X324 nt_n_6 nt_c_4 rl_admittance res=6682654.269025387 ind=25947.796697059795
+* Transfer network from port 7 to port 4
+R4_7 nt_p_7 nt_c_4 117.27579729563638
+X325 nt_n_7 nt_c_4 rl_admittance res=107.97121129571734 ind=9.343911257704506e-06
+X326 nt_p_7 nt_c_4 rl_admittance res=1280.0613967547254 ind=0.0004892751658541865
+X327 nt_n_7 nt_c_4 rl_admittance res=20985.4136380067 ind=0.01761754829682891
+X328 nt_p_7 nt_c_4 rl_admittance res=44869201.19147692 ind=1526.6074316099418
+X329 nt_n_7 nt_c_4 rl_admittance res=4752893.921348688 ind=1582.5630387630956
+X330 nt_n_7 nt_c_4 rl_admittance res=8923325.438704628 ind=34648.004374312484
+* Transfer network from port 8 to port 4
+R4_8 nt_n_8 nt_c_4 369.36393467863945
+X331 nt_p_8 nt_c_4 rl_admittance res=467.79750184969623 ind=4.0483553823321776e-05
+X332 nt_p_8 nt_c_4 rl_admittance res=2104.701155564394 ind=0.0008044754802957192
+X333 nt_p_8 nt_c_4 rl_admittance res=12962.968976658196 ind=0.010882593784234926
+X334 nt_p_8 nt_c_4 rl_admittance res=24132064.027647268 ind=821.0573691178438
+X335 nt_p_8 nt_c_4 rl_admittance res=11044070.497696128 ind=3677.3254476902516
+X336 nt_p_8 nt_c_4 rl_admittance res=23220227.842761315 ind=90160.84433936306
+* Transfer network from port 9 to port 4
+R4_9 nt_p_9 nt_c_4 880.9042931681714
+X337 nt_p_9 nt_c_4 rl_admittance res=307.94098450920404 ind=2.664944847181029e-05
+X338 nt_n_9 nt_c_4 rl_admittance res=252.68338067785706 ind=9.658263525733394e-05
+X339 nt_n_9 nt_c_4 rl_admittance res=3056.52492198869 ind=0.002565995427227221
+X340 nt_p_9 nt_c_4 rl_admittance res=10070882.875856688 ind=342.6467205321348
+X341 nt_p_9 nt_c_4 rl_admittance res=1206231.7210890332 ind=401.63693311240917
+X342 nt_p_9 nt_c_4 rl_admittance res=3684640.8877770468 ind=14306.936856043048
+* Transfer network from port 10 to port 4
+R4_10 nt_n_10 nt_c_4 489.8030373979025
+X343 nt_p_10 nt_c_4 rl_admittance res=131.40750039836436 ind=1.1372105652831451e-05
+X344 nt_n_10 nt_c_4 rl_admittance res=240.07561790788054 ind=9.176359670498823e-05
+X345 nt_n_10 nt_c_4 rl_admittance res=793.1129742349501 ind=0.0006658294360764886
+X346 nt_p_10 nt_c_4 rl_admittance res=1011063.1762737355 ind=34.39991169309763
+X347 nt_n_10 nt_c_4 rl_admittance res=4344089.482878501 ind=1446.444117299425
+X348 nt_p_10 nt_c_4 rl_admittance res=4502451.326575667 ind=17482.37855157381
+* Transfer network from port 11 to port 4
+R4_11 nt_n_11 nt_c_4 132.27966308132213
+X349 nt_p_11 nt_c_4 rl_admittance res=53.81822720485517 ind=4.657470570297209e-06
+X350 nt_n_11 nt_c_4 rl_admittance res=116.34016155617577 ind=4.4468454392276107e-05
+X351 nt_n_11 nt_c_4 rl_admittance res=429.8422675648274 ind=0.00036085859633125156
+X352 nt_p_11 nt_c_4 rl_admittance res=1781644.3298147619 ind=60.61778240209856
+X353 nt_n_11 nt_c_4 rl_admittance res=1146302.8802549765 ind=381.6825284845478
+X354 nt_n_11 nt_c_4 rl_admittance res=5467640.201763623 ind=21230.069768179794
+* Transfer network from port 12 to port 4
+R4_12 nt_p_12 nt_c_4 1712.4697378814533
+X355 nt_p_12 nt_c_4 rl_admittance res=309.91132851705004 ind=2.6819963550186496e-05
+X356 nt_n_12 nt_c_4 rl_admittance res=341.51630544672935 ind=0.00013053705659196203
+X357 nt_n_12 nt_c_4 rl_admittance res=1131.2955858463095 ind=0.0009497384690831295
+X358 nt_p_12 nt_c_4 rl_admittance res=1016816.5121338714 ind=34.59566033687558
+X359 nt_n_12 nt_c_4 rl_admittance res=6407457.185649859 ind=2133.4801664559504
+X360 nt_p_12 nt_c_4 rl_admittance res=2776070.8734484604 ind=10779.08862871269
+* Transfer network from port 13 to port 4
+R4_13 nt_n_13 nt_c_4 239.8701709749609
+X361 nt_p_13 nt_c_4 rl_admittance res=82.61859706044604 ind=7.149876619004594e-06
+X362 nt_n_13 nt_c_4 rl_admittance res=153.59546335997405 ind=5.870846976592454e-05
+X363 nt_n_13 nt_c_4 rl_admittance res=702.2868513035736 ind=0.0005895796353835329
+X364 nt_p_13 nt_c_4 rl_admittance res=6002278.954003881 ind=204.21856004690457
+X365 nt_n_13 nt_c_4 rl_admittance res=1804722.6419766033 ind=600.9154413445458
+X366 nt_n_13 nt_c_4 rl_admittance res=5916224.442390494 ind=22971.858615650508
+* Transfer network from port 14 to port 4
+R4_14 nt_n_14 nt_c_4 123.23494784376028
+X367 nt_p_14 nt_c_4 rl_admittance res=68.1677878259502 ind=5.89929252840542e-06
+X368 nt_n_14 nt_c_4 rl_admittance res=277.10790874490675 ind=0.00010591837106751693
+X369 nt_n_14 nt_c_4 rl_admittance res=339.33920738978776 ind=0.0002848800113413003
+X370 nt_p_14 nt_c_4 rl_admittance res=993584.405111451 ind=33.80522265823196
+X371 nt_n_14 nt_c_4 rl_admittance res=1447269.4652566111 ind=481.89486252948336
+X372 nt_p_14 nt_c_4 rl_admittance res=23357895.749548934 ind=90695.38925418713
+* Transfer network from port 15 to port 4
+R4_15 nt_p_15 nt_c_4 532.3768539359564
+X373 nt_n_15 nt_c_4 rl_admittance res=817.9493292273245 ind=7.078596094162924e-05
+X374 nt_n_15 nt_c_4 rl_admittance res=1816.3124539228922 ind=0.000694245275569722
+X375 nt_n_15 nt_c_4 rl_admittance res=13943.644148003095 ind=0.011705884308438804
+X376 nt_n_15 nt_c_4 rl_admittance res=30328662.325583946 ind=1031.8873540770717
+X377 nt_n_15 nt_c_4 rl_admittance res=15210085.381101238 ind=5064.4763672174095
+X378 nt_n_15 nt_c_4 rl_admittance res=29836232.120057203 ind=115849.84859173904
+* Transfer network from port 16 to port 4
+R4_16 nt_p_16 nt_c_4 183.5041145407051
+X379 nt_n_16 nt_c_4 rl_admittance res=172.33549452073598 ind=1.491404558705965e-05
+X380 nt_p_16 nt_c_4 rl_admittance res=2801.699065553979 ind=0.0010708875202765794
+X381 nt_n_16 nt_c_4 rl_admittance res=183279.42714325065 ind=0.15386564283219217
+X382 nt_p_16 nt_c_4 rl_admittance res=124183178.71898815 ind=4225.14683745616
+X383 nt_n_16 nt_c_4 rl_admittance res=7313614.865842704 ind=2435.2019544224654
+X384 nt_n_16 nt_c_4 rl_admittance res=12182975.916921236 ind=47304.76387544013
+
+* Port network for port 5
+R_ref_5 p5 a5 50.0
+H_b_5 a5 0 V_c_5 14.142135623730951
+* Differential incident wave a sources for transfer from port 5
+H_p_5 nt_p_5 nts_p_5 H_b_5 3.5355339059327378
+E_p_5 nts_p_5 0 p5 0 0.07071067811865475
+E_n_5 0 nt_n_5 nt_p_5 0 1
+* Current sensor on center node for transfer to port 5
+V_c_5 nt_c_5 0 0
+* Transfer network from port 1 to port 5
+R5_1 nt_n_1 nt_c_5 118.17988321310087
+X385 nt_p_1 nt_c_5 rl_admittance res=13.142827904691353 ind=1.1373903852979143e-06
+X386 nt_n_1 nt_c_5 rl_admittance res=16.892655506823186 ind=6.456844059021532e-06
+X387 nt_n_1 nt_c_5 rl_admittance res=118.8140642273861 ind=9.974606891128834e-05
+X388 nt_n_1 nt_c_5 rl_admittance res=366469.5459096724 ind=12.468577941848835
+X389 nt_n_1 nt_c_5 rl_admittance res=437983.45973959094 ind=145.83461075368913
+X390 nt_n_1 nt_c_5 rl_admittance res=255349.2596622261 ind=991.4848815643561
+* Transfer network from port 2 to port 5
+R5_2 nt_p_2 nt_c_5 4.7648476337828365
+X391 nt_n_2 nt_c_5 rl_admittance res=12.251389058870778 ind=1.0602445853475493e-06
+X392 nt_n_2 nt_c_5 rl_admittance res=9.028005233616826 ind=3.4507553850221443e-06
+X393 nt_n_2 nt_c_5 rl_admittance res=57.28642571760015 ind=4.809275572270234e-05
+X394 nt_n_2 nt_c_5 rl_admittance res=109910.61506266714 ind=3.739544215450836
+X395 nt_n_2 nt_c_5 rl_admittance res=115905.30472360084 ind=38.59279299885883
+X396 nt_n_2 nt_c_5 rl_admittance res=318408.74453709467 ind=1236.335898463221
+* Transfer network from port 3 to port 5
+R5_3 nt_p_3 nt_c_5 3.4394257395265426
+X397 nt_n_3 nt_c_5 rl_admittance res=9.962097029327792 ind=8.621275010774355e-07
+X398 nt_n_3 nt_c_5 rl_admittance res=6.131243636635031 ind=2.3435323140065287e-06
+X399 nt_n_3 nt_c_5 rl_admittance res=36.704383237821446 ind=3.081384315563379e-05
+X400 nt_n_3 nt_c_5 rl_admittance res=166434.99491367655 ind=5.662701661010296
+X401 nt_n_3 nt_c_5 rl_admittance res=77535.0307769375 ind=25.816707872605264
+X402 nt_n_3 nt_c_5 rl_admittance res=13353852.991491878 ind=51851.11313504923
+* Transfer network from port 4 to port 5
+R5_4 nt_p_4 nt_c_5 77.11923571672017
+X403 nt_n_4 nt_c_5 rl_admittance res=124.18859372328397 ind=1.0747375944420026e-05
+X404 nt_n_4 nt_c_5 rl_admittance res=242.0850179876265 ind=9.2531645456226e-05
+X405 nt_n_4 nt_c_5 rl_admittance res=1277.7351864580212 ind=0.0010726765622200071
+X406 nt_n_4 nt_c_5 rl_admittance res=2700598.0941747045 ind=91.88380918049155
+X407 nt_n_4 nt_c_5 rl_admittance res=1936996.7782977729 ind=644.9585364756894
+X408 nt_n_4 nt_c_5 rl_admittance res=5465983.724016121 ind=21223.63790052735
+* Transfer network from port 5 to port 5
+R5_5 nt_n_5 nt_c_5 5.213150637426265
+X409 nt_n_5 nt_c_5 rl_admittance res=1.4203697125716825 ind=1.2291988195864096e-07
+X410 nt_n_5 nt_c_5 rl_admittance res=12.60177507083794 ind=4.816749886742201e-06
+X411 nt_n_5 nt_c_5 rl_admittance res=40.402356003012024 ind=3.3918343019916246e-05
+X412 nt_n_5 nt_c_5 rl_admittance res=164771.21995262077 ind=5.606094207509279
+X413 nt_n_5 nt_c_5 rl_admittance res=50696.726364498914 ind=16.880403109854416
+X414 nt_p_5 nt_c_5 rl_admittance res=1047081.5257848233 ind=4065.6687391781265
+* Transfer network from port 6 to port 5
+R5_6 nt_p_6 nt_c_5 2.4040882712288707
+X415 nt_n_6 nt_c_5 rl_admittance res=4.384410808355873 ind=3.7943026681800986e-07
+X416 nt_n_6 nt_c_5 rl_admittance res=6.269314684169035 ind=2.3963069190786983e-06
+X417 nt_n_6 nt_c_5 rl_admittance res=35.270536482067236 ind=2.9610108747273057e-05
+X418 nt_n_6 nt_c_5 rl_admittance res=207266.76721179407 ind=7.051941615831505
+X419 nt_n_6 nt_c_5 rl_admittance res=86348.58832924614 ind=28.75134320280785
+X420 nt_p_6 nt_c_5 rl_admittance res=643580.1575405538 ind=2498.930277379065
+* Transfer network from port 7 to port 5
+R5_7 nt_n_7 nt_c_5 64.96555378909598
+X421 nt_p_7 nt_c_5 rl_admittance res=78.61837092901081 ind=6.803693988150252e-06
+X422 nt_p_7 nt_c_5 rl_admittance res=539.2805190374638 ind=0.0002061280545315475
+X423 nt_p_7 nt_c_5 rl_admittance res=1220.5425518125553 ind=0.0010246625454143278
+X424 nt_p_7 nt_c_5 rl_admittance res=1183531.3145640527 ind=40.26788202995183
+X425 nt_n_7 nt_c_5 rl_admittance res=1199937.5277959981 ind=399.5411662324361
+X426 nt_n_7 nt_c_5 rl_admittance res=1679082.3444734805 ind=6519.6380896081455
+* Transfer network from port 8 to port 5
+R5_8 nt_p_8 nt_c_5 34.95392351931545
+X427 nt_n_8 nt_c_5 rl_admittance res=21.73927033442394 ind=1.8813330921680838e-06
+X428 nt_p_8 nt_c_5 rl_admittance res=64.06005176454566 ind=2.448553837432185e-05
+X429 nt_p_8 nt_c_5 rl_admittance res=562.0088775363539 ind=0.00047181431417254565
+X430 nt_p_8 nt_c_5 rl_admittance res=11306217.073773833 ind=384.6771181542001
+X431 nt_p_8 nt_c_5 rl_admittance res=1281773.3923543112 ind=426.78991544467584
+X432 nt_p_8 nt_c_5 rl_admittance res=4845413.503649372 ind=18814.051938709457
+* Transfer network from port 9 to port 5
+R5_9 nt_n_9 nt_c_5 16.02612415606637
+X433 nt_p_9 nt_c_5 rl_admittance res=7.4960011805193405 ind=6.487096789771695e-07
+X434 nt_n_9 nt_c_5 rl_admittance res=16.88157714842492 ind=6.452609601474069e-06
+X435 nt_n_9 nt_c_5 rl_admittance res=84.87584361119863 ind=7.125445797009416e-05
+X436 nt_p_9 nt_c_5 rl_admittance res=247358.13319817634 ind=8.41599035378477
+X437 nt_p_9 nt_c_5 rl_admittance res=199575.94368413003 ind=66.4524639361498
+X438 nt_p_9 nt_c_5 rl_admittance res=365190.15861239703 ind=1417.9814801078257
+* Transfer network from port 10 to port 5
+R5_10 nt_n_10 nt_c_5 11.796420608207136
+X439 nt_p_10 nt_c_5 rl_admittance res=5.447656707996339 ind=4.7144438069275876e-07
+X440 nt_n_10 nt_c_5 rl_admittance res=15.139927979125636 ind=5.7869027155941295e-06
+X441 nt_n_10 nt_c_5 rl_admittance res=30.523267377391893 ind=2.5624709928248127e-05
+X442 nt_p_10 nt_c_5 rl_admittance res=51727.243333665356 ind=1.7599420536345425
+X443 nt_n_10 nt_c_5 rl_admittance res=204288.50545006667 ind=68.02159764543805
+X444 nt_p_10 nt_c_5 rl_admittance res=235168.9407305782 ind=913.1275714537144
+* Transfer network from port 11 to port 5
+R5_11 nt_n_11 nt_c_5 4.960266163546926
+X445 nt_p_11 nt_c_5 rl_admittance res=2.190050290828196 ind=1.8952862825037415e-07
+X446 nt_n_11 nt_c_5 rl_admittance res=5.327208130345572 ind=2.036207519516371e-06
+X447 nt_n_11 nt_c_5 rl_admittance res=14.859478250133053 ind=1.2474739848028256e-05
+X448 nt_p_11 nt_c_5 rl_admittance res=48928.58342920874 ind=1.6647218380915965
+X449 nt_n_11 nt_c_5 rl_admittance res=56630.26387468318 ind=18.85608304467347
+X450 nt_p_11 nt_c_5 rl_admittance res=556769.7217752723 ind=2161.8576939803716
+* Transfer network from port 12 to port 5
+R5_12 nt_n_12 nt_c_5 21.692344331100983
+X451 nt_p_12 nt_c_5 rl_admittance res=8.3459754522456 ind=7.222671029518805e-07
+X452 nt_n_12 nt_c_5 rl_admittance res=19.623601576132046 ind=7.5006878108817855e-06
+X453 nt_n_12 nt_c_5 rl_admittance res=43.90910809074183 ind=3.6862310450641316e-05
+X454 nt_p_12 nt_c_5 rl_admittance res=72013.00998970852 ind=2.4501349099964074
+X455 nt_n_12 nt_c_5 rl_admittance res=305441.13738363597 ind=101.702218172784
+X456 nt_p_12 nt_c_5 rl_admittance res=270411.831310348 ind=1049.9707063768021
+* Transfer network from port 13 to port 5
+R5_13 nt_n_13 nt_c_5 47.82282344345563
+X457 nt_p_13 nt_c_5 rl_admittance res=3.4482124383287727 ind=2.984109433876002e-07
+X458 nt_n_13 nt_c_5 rl_admittance res=4.329026389195941 ind=1.6546746194603382e-06
+X459 nt_n_13 nt_c_5 rl_admittance res=26.256268120983915 ind=2.2042504364944252e-05
+X460 nt_p_13 nt_c_5 rl_admittance res=258376.4244097662 ind=8.79087122530897
+X461 nt_n_13 nt_c_5 rl_admittance res=68661.76204734661 ind=22.862190612838983
+X462 nt_p_13 nt_c_5 rl_admittance res=966597.7046918501 ind=3753.161501327623
+* Transfer network from port 14 to port 5
+R5_14 nt_n_14 nt_c_5 5.375072447295689
+X463 nt_p_14 nt_c_5 rl_admittance res=2.4630501100899718 ind=2.1315424154061405e-07
+X464 nt_n_14 nt_c_5 rl_admittance res=8.052491018356022 ind=3.07788664554222e-06
+X465 nt_n_14 nt_c_5 rl_admittance res=10.440492417063357 ind=8.76493942760143e-06
+X466 nt_p_14 nt_c_5 rl_admittance res=45902.14030353836 ind=1.5617516392846955
+X467 nt_n_14 nt_c_5 rl_admittance res=64349.97565246577 ind=21.42650240003669
+X468 nt_p_14 nt_c_5 rl_admittance res=290762.3840009012 ind=1128.98900997734
+* Transfer network from port 15 to port 5
+R5_15 nt_n_15 nt_c_5 600.9554540491537
+X469 nt_p_15 nt_c_5 rl_admittance res=55.81127473654486 ind=4.829950429002232e-06
+X470 nt_n_15 nt_c_5 rl_admittance res=70.27862346650788 ind=2.6862449910414918e-05
+X471 nt_n_15 nt_c_5 rl_admittance res=494.23080090203297 ind=0.00041491367074616525
+X472 nt_n_15 nt_c_5 rl_admittance res=4602984.842142154 ind=156.6096716902757
+X473 nt_n_15 nt_c_5 rl_admittance res=1580656.6673461385 ind=526.3085732842585
+X474 nt_n_15 nt_c_5 rl_admittance res=4454933.824054303 ind=17297.87484311603
+* Transfer network from port 16 to port 5
+R5_16 nt_n_16 nt_c_5 158.63828482546012
+X475 nt_p_16 nt_c_5 rl_admittance res=305.44413470150573 ind=2.6433369178571176e-05
+X476 nt_p_16 nt_c_5 rl_admittance res=422.4739592191382 ind=0.0001614813297159573
+X477 nt_p_16 nt_c_5 rl_admittance res=1507.7642589753218 ind=0.0012657891862861217
+X478 nt_p_16 nt_c_5 rl_admittance res=1895966.148647195 ind=64.50741122521899
+X479 nt_n_16 nt_c_5 rl_admittance res=1748264.84904371 ind=582.116785657237
+X480 nt_n_16 nt_c_5 rl_admittance res=2074224.1211365466 ind=8053.917445476061
+
+* Port network for port 6
+R_ref_6 p6 a6 50.0
+H_b_6 a6 0 V_c_6 14.142135623730951
+* Differential incident wave a sources for transfer from port 6
+H_p_6 nt_p_6 nts_p_6 H_b_6 3.5355339059327378
+E_p_6 nts_p_6 0 p6 0 0.07071067811865475
+E_n_6 0 nt_n_6 nt_p_6 0 1
+* Current sensor on center node for transfer to port 6
+V_c_6 nt_c_6 0 0
+* Transfer network from port 1 to port 6
+R6_1 nt_n_1 nt_c_6 72.34885513645317
+X481 nt_p_1 nt_c_6 rl_admittance res=9.412631597615233 ind=8.145763421019496e-07
+X482 nt_n_1 nt_c_6 rl_admittance res=12.391684971557629 ind=4.7364475915317525e-06
+X483 nt_n_1 nt_c_6 rl_admittance res=85.42006577163338 ind=7.171134008645613e-05
+X484 nt_n_1 nt_c_6 rl_admittance res=408565.0320428381 ind=13.900813868980318
+X485 nt_n_1 nt_c_6 rl_admittance res=423563.432547954 ind=141.0331987236542
+X486 nt_n_1 nt_c_6 rl_admittance res=360895.6210501279 ind=1401.3064011515269
+* Transfer network from port 2 to port 6
+R6_2 nt_p_2 nt_c_6 27.395375560273113
+X487 nt_p_2 nt_c_6 rl_admittance res=7.039191760948177 ind=6.09177042203595e-07
+X488 nt_n_2 nt_c_6 rl_admittance res=6.467654565016263 ind=2.4721179530986715e-06
+X489 nt_n_2 nt_c_6 rl_admittance res=41.79997373611159 ind=3.509166265698035e-05
+X490 nt_n_2 nt_c_6 rl_admittance res=111355.32312128248 ind=3.7886982453917093
+X491 nt_n_2 nt_c_6 rl_admittance res=108198.99909223763 ind=36.02683746536217
+X492 nt_n_2 nt_c_6 rl_admittance res=391284.29468976497 ind=1519.3013016433044
+* Transfer network from port 3 to port 6
+R6_3 nt_p_3 nt_c_6 2.1446365299667978
+X493 nt_n_3 nt_c_6 rl_admittance res=4.957622416669826 ind=4.2903643808992655e-07
+X494 nt_n_3 nt_c_6 rl_admittance res=4.40956621328655 ind=1.685459186426973e-06
+X495 nt_n_3 nt_c_6 rl_admittance res=26.485659173867873 ind=2.2235081362603442e-05
+X496 nt_n_3 nt_c_6 rl_admittance res=123985.01306432442 ind=4.21840454757655
+X497 nt_n_3 nt_c_6 rl_admittance res=55715.00587915276 ind=18.551331140122688
+X498 nt_n_3 nt_c_6 rl_admittance res=1511790.7687617629 ind=5870.068678869871
+* Transfer network from port 4 to port 6
+R6_4 nt_p_4 nt_c_6 157.20406098575106
+X499 nt_p_4 nt_c_6 rl_admittance res=1362.2345055914404 ind=0.00011788881665472497
+X500 nt_n_4 nt_c_6 rl_admittance res=165.6460557772653 ind=6.33145422703836e-05
+X501 nt_n_4 nt_c_6 rl_admittance res=946.1661612021766 ind=0.0007943197274708505
+X502 nt_n_4 nt_c_6 rl_admittance res=2420064.7797963275 ind=82.33908292792013
+X503 nt_n_4 nt_c_6 rl_admittance res=1824494.6639077256 ind=607.49889799803
+X504 nt_n_4 nt_c_6 rl_admittance res=6752526.681259365 ind=26219.101342548336
+* Transfer network from port 5 to port 6
+R6_5 nt_p_5 nt_c_6 2.404296095512764
+X505 nt_n_5 nt_c_6 rl_admittance res=4.384819679347408 ind=3.794656508265331e-07
+X506 nt_n_5 nt_c_6 rl_admittance res=6.270024831159125 ind=2.3965783570638123e-06
+X507 nt_n_5 nt_c_6 rl_admittance res=35.26636984401486 ind=2.9606610796344408e-05
+X508 nt_n_5 nt_c_6 rl_admittance res=206486.25824766513 ind=7.025385966222486
+X509 nt_n_5 nt_c_6 rl_admittance res=86278.00399100907 ind=28.72784085525749
+X510 nt_p_5 nt_c_6 rl_admittance res=642898.0796520907 ind=2496.2818658843344
+* Transfer network from port 6 to port 6
+R6_6 nt_p_6 nt_c_6 4.504318296060819
+X511 nt_n_6 nt_c_6 rl_admittance res=1.0180835145019733 ind=8.810572650133532e-08
+X512 nt_n_6 nt_c_6 rl_admittance res=5.091354271638991 ind=1.946057596920023e-06
+X513 nt_n_6 nt_c_6 rl_admittance res=23.111739977144346 ind=1.94026290019684e-05
+X514 nt_n_6 nt_c_6 rl_admittance res=38417.14245562277 ind=1.3070857875025406
+X515 nt_n_6 nt_c_6 rl_admittance res=23086.24329517563 ind=7.686987327600601
+X516 nt_n_6 nt_c_6 rl_admittance res=157591.31017807664 ind=611.9046584046002
+* Transfer network from port 7 to port 6
+R6_7 nt_n_7 nt_c_6 16.55489998400768
+X517 nt_p_7 nt_c_6 rl_admittance res=18.18343048113476 ind=1.57360798992075e-06
+X518 nt_p_7 nt_c_6 rl_admittance res=225.15015669717377 ind=8.605866916961155e-05
+X519 nt_p_7 nt_c_6 rl_admittance res=1032.5982928764392 ind=0.0008668807110395229
+X520 nt_p_7 nt_c_6 rl_admittance res=825234.3881520344 ind=28.077365237611687
+X521 nt_n_7 nt_c_6 rl_admittance res=1150864.126018375 ind=383.2012787607629
+X522 nt_n_7 nt_c_6 rl_admittance res=2784092.113706532 ind=10810.2339645472
+* Transfer network from port 8 to port 6
+R6_8 nt_p_8 nt_c_6 24.554190731672858
+X523 nt_n_8 nt_c_6 rl_admittance res=15.830843615131988 ind=1.3700133220628097e-06
+X524 nt_p_8 nt_c_6 rl_admittance res=50.090434324264166 ind=1.914596098581403e-05
+X525 nt_p_8 nt_c_6 rl_admittance res=403.6894429907639 ind=0.0003389029342709338
+X526 nt_n_8 nt_c_6 rl_admittance res=4156107.9839040856 ind=141.40535526196527
+X527 nt_p_8 nt_c_6 rl_admittance res=1232896.19881577 ind=410.51535909804136
+X528 nt_p_8 nt_c_6 rl_admittance res=16585843.848544616 ind=64400.4742585585
+* Transfer network from port 9 to port 6
+R6_9 nt_n_9 nt_c_6 12.341820079255562
+X529 nt_p_9 nt_c_6 rl_admittance res=5.5615867364383735 ind=4.813039725466879e-07
+X530 nt_n_9 nt_c_6 rl_admittance res=12.101001547589023 ind=4.625340279934139e-06
+X531 nt_n_9 nt_c_6 rl_admittance res=61.90914910467227 ind=5.197359666963157e-05
+X532 nt_p_9 nt_c_6 rl_admittance res=201500.42241489547 ind=6.855750362445812
+X533 nt_p_9 nt_c_6 rl_admittance res=270387.3687793547 ind=90.0304242130425
+X534 nt_p_9 nt_c_6 rl_admittance res=414253.52773692354 ind=1608.4875688661305
+* Transfer network from port 10 to port 6
+R6_10 nt_n_10 nt_c_6 7.9740395487991
+X535 nt_p_10 nt_c_6 rl_admittance res=4.331828887182893 ind=3.7487978711787686e-07
+X536 nt_n_10 nt_c_6 rl_admittance res=16.429020271635274 ind=6.279629741671192e-06
+X537 nt_n_10 nt_c_6 rl_admittance res=22.42321337919984 ind=1.882460129176069e-05
+X538 nt_p_10 nt_c_6 rl_admittance res=41659.52366446504 ind=1.417402956475704
+X539 nt_n_10 nt_c_6 rl_admittance res=149693.81084471662 ind=49.843294652622866
+X540 nt_p_10 nt_c_6 rl_admittance res=208833.07929317513 ind=810.8691647025097
+* Transfer network from port 11 to port 6
+R6_11 nt_n_11 nt_c_6 3.5781109652571095
+X541 nt_p_11 nt_c_6 rl_admittance res=1.5882330952762949 ind=1.3744690756655133e-07
+X542 nt_n_11 nt_c_6 rl_admittance res=3.8042967977607236 ind=1.4541083352735343e-06
+X543 nt_n_11 nt_c_6 rl_admittance res=11.45317927518976 ind=9.615104210643584e-06
+X544 nt_p_11 nt_c_6 rl_admittance res=29676.746619963884 ind=1.0097068976714454
+X545 nt_n_11 nt_c_6 rl_admittance res=48477.33403921537 ind=16.141415806407185
+X546 nt_p_11 nt_c_6 rl_admittance res=154916.72813149024 ind=601.5196364656227
+* Transfer network from port 12 to port 6
+R6_12 nt_n_12 nt_c_6 14.327233108111797
+X547 nt_p_12 nt_c_6 rl_admittance res=6.602155258405582 ind=5.713555688022169e-07
+X548 nt_n_12 nt_c_6 rl_admittance res=19.748821486750014 ind=7.548550353015452e-06
+X549 nt_n_12 nt_c_6 rl_admittance res=32.20759699111729 ind=2.7038728199674725e-05
+X550 nt_p_12 nt_c_6 rl_admittance res=60861.35173488654 ind=2.0707164243867417
+X551 nt_n_12 nt_c_6 rl_admittance res=228662.23750113067 ind=76.13727792339886
+X552 nt_p_12 nt_c_6 rl_admittance res=261008.90173206554 ind=1013.4604672963617
+* Transfer network from port 13 to port 6
+R6_13 nt_n_13 nt_c_6 5.931100618087837
+X553 nt_p_13 nt_c_6 rl_admittance res=2.1770676844488412 ind=1.8840510355849906e-07
+X554 nt_n_13 nt_c_6 rl_admittance res=4.212862461701748 ind=1.6102735266415965e-06
+X555 nt_n_13 nt_c_6 rl_admittance res=18.737938444638527 ind=1.5730761433911033e-05
+X556 nt_p_13 nt_c_6 rl_admittance res=60179.8984378936 ind=2.0475309956325045
+X557 nt_n_13 nt_c_6 rl_admittance res=65991.32725620283 ind=21.9730204634888
+X558 nt_p_13 nt_c_6 rl_admittance res=257427.62506517087 ind=999.5548790184782
+* Transfer network from port 14 to port 6
+R6_14 nt_n_14 nt_c_6 3.80492508173092
+X559 nt_p_14 nt_c_6 rl_admittance res=1.5472967804012951 ind=1.339042475480227e-07
+X560 nt_n_14 nt_c_6 rl_admittance res=3.7605752841768623 ind=1.4373967534194346e-06
+X561 nt_n_14 nt_c_6 rl_admittance res=8.5040691254901 ind=7.139284987290064e-06
+X562 nt_p_14 nt_c_6 rl_admittance res=21375.8862118136 ind=0.727282543073261
+X563 nt_n_14 nt_c_6 rl_admittance res=47183.937968196515 ind=15.710755907333521
+X564 nt_p_14 nt_c_6 rl_admittance res=89504.15183169598 ind=347.5319000170764
+* Transfer network from port 15 to port 6
+R6_15 nt_n_15 nt_c_6 41.89627956227945
+X565 nt_p_15 nt_c_6 rl_admittance res=21.825683146253418 ind=1.8888113230369765e-06
+X566 nt_n_15 nt_c_6 rl_admittance res=51.879324694417484 ind=1.982972477618434e-05
+X567 nt_n_15 nt_c_6 rl_admittance res=374.11373888339836 ind=0.00031407371696255747
+X568 nt_p_15 nt_c_6 rl_admittance res=7259456.669880609 ind=246.99215068253167
+X569 nt_n_15 nt_c_6 rl_admittance res=1449021.8638911215 ind=482.47835573468586
+X570 nt_n_15 nt_c_6 rl_admittance res=13738760.160243578 ind=53345.65296307875
+* Transfer network from port 16 to port 6
+R6_16 nt_n_16 nt_c_6 21.95393136286068
+X571 nt_p_16 nt_c_6 rl_admittance res=25.960045544450796 ind=2.2466022090736416e-06
+X572 nt_p_16 nt_c_6 rl_admittance res=157.16418899314672 ind=6.007253623217797e-05
+X573 nt_p_16 nt_c_6 rl_admittance res=1500.9909794169162 ind=0.0012601029233509932
+X574 nt_p_16 nt_c_6 rl_admittance res=882992.1037742036 ind=30.04248508731309
+X575 nt_n_16 nt_c_6 rl_admittance res=1349983.2391413543 ind=449.5016325987245
+X576 nt_n_16 nt_c_6 rl_admittance res=4564909.992173578 ind=17724.896672616844
+
+* Port network for port 7
+R_ref_7 p7 a7 50.0
+H_b_7 a7 0 V_c_7 14.142135623730951
+* Differential incident wave a sources for transfer from port 7
+H_p_7 nt_p_7 nts_p_7 H_b_7 3.5355339059327378
+E_p_7 nts_p_7 0 p7 0 0.07071067811865475
+E_n_7 0 nt_n_7 nt_p_7 0 1
+* Current sensor on center node for transfer to port 7
+V_c_7 nt_c_7 0 0
+* Transfer network from port 1 to port 7
+R7_1 nt_n_1 nt_c_7 19.313687211119728
+X577 nt_p_1 nt_c_7 rl_admittance res=19.05785789268166 ind=1.6492816073299362e-06
+X578 nt_n_1 nt_c_7 rl_admittance res=819.6667827962043 ind=0.00031329950431637367
+X579 nt_p_1 nt_c_7 rl_admittance res=1888.8454343858668 ind=0.001585712163674968
+X580 nt_n_1 nt_c_7 rl_admittance res=8859034.696331114 ind=301.41539954311446
+X581 nt_n_1 nt_c_7 rl_admittance res=482737.91663164995 ind=160.73642646204203
+X582 nt_n_1 nt_c_7 rl_admittance res=458386.8436452167 ind=1779.8509617119075
+* Transfer network from port 2 to port 7
+R7_2 nt_p_2 nt_c_7 20.89195876062724
+X583 nt_n_2 nt_c_7 rl_admittance res=19.063082021236113 ind=1.6497337074131512e-06
+X584 nt_p_2 nt_c_7 rl_admittance res=236.07832805372422 ind=9.023572104111934e-05
+X585 nt_p_2 nt_c_7 rl_admittance res=2770.7065021329117 ind=0.002326046865679078
+X586 nt_n_2 nt_c_7 rl_admittance res=2243807.2050341135 ind=76.34218268534009
+X587 nt_n_2 nt_c_7 rl_admittance res=408138.2026629292 ind=135.897086055367
+X588 nt_n_2 nt_c_7 rl_admittance res=582521.3258477306 ind=2261.8475124260863
+* Transfer network from port 3 to port 7
+R7_3 nt_p_3 nt_c_7 68.8620114226883
+X589 nt_n_3 nt_c_7 rl_admittance res=45.06153963304744 ind=3.8996601261935704e-06
+X590 nt_p_3 nt_c_7 rl_admittance res=141.094559827075 ind=5.393027579421902e-05
+X591 nt_p_3 nt_c_7 rl_admittance res=1702.8118700246841 ind=0.0014295343841229575
+X592 nt_n_3 nt_c_7 rl_admittance res=3258907.6154873767 ind=110.87945523037969
+X593 nt_n_3 nt_c_7 rl_admittance res=383635.96858121845 ind=127.73861867391248
+X594 nt_n_3 nt_c_7 rl_admittance res=612033.4922823656 ind=2376.4390600219463
+* Transfer network from port 4 to port 7
+R7_4 nt_p_4 nt_c_7 117.40121104982678
+X595 nt_n_4 nt_c_7 rl_admittance res=108.10119339369838 ind=9.355160007941258e-06
+X596 nt_p_4 nt_c_7 rl_admittance res=1280.9869255009326 ind=0.0004896289287533344
+X597 nt_n_4 nt_c_7 rl_admittance res=21039.228585804525 ind=0.017662726698278307
+X598 nt_p_4 nt_c_7 rl_admittance res=45934380.9454857 ind=1562.8485788844591
+X599 nt_n_4 nt_c_7 rl_admittance res=4754240.6880127415 ind=1583.0114693781356
+X600 nt_n_4 nt_c_7 rl_admittance res=8907333.034623785 ind=34585.908142324195
+* Transfer network from port 5 to port 7
+R7_5 nt_n_5 nt_c_7 64.59591461694939
+X601 nt_p_5 nt_c_7 rl_admittance res=78.05031974623282 ind=6.7545344040535775e-06
+X602 nt_p_5 nt_c_7 rl_admittance res=540.6713549425992 ind=0.00020665967080392813
+X603 nt_p_5 nt_c_7 rl_admittance res=1220.12160744116 ind=0.0010243091567262962
+X604 nt_p_5 nt_c_7 rl_admittance res=1195958.8919690491 ind=40.690711755455816
+X605 nt_n_5 nt_c_7 rl_admittance res=1207310.0336765759 ind=401.9959770282881
+X606 nt_n_5 nt_c_7 rl_admittance res=1678366.4972121972 ind=6516.858556438516
+* Transfer network from port 6 to port 7
+R7_6 nt_n_6 nt_c_7 16.55037212098823
+X607 nt_p_6 nt_c_7 rl_admittance res=18.179452141086546 ind=1.5732637013282877e-06
+X608 nt_p_6 nt_c_7 rl_admittance res=224.86452523549391 ind=8.594949285889638e-05
+X609 nt_p_6 nt_c_7 rl_admittance res=1033.8334239373623 ind=0.0008679176208424023
+X610 nt_p_6 nt_c_7 rl_admittance res=827259.5238352858 ind=28.146267448972143
+X611 nt_n_6 nt_c_7 rl_admittance res=1162366.227368195 ind=387.0311139654937
+X612 nt_n_6 nt_c_7 rl_admittance res=2788167.757975152 ind=10826.059111956347
+* Transfer network from port 7 to port 7
+R7_7 nt_n_7 nt_c_7 1.6148989435321413
+X613 nt_n_7 nt_c_7 rl_admittance res=2.4488294061853386 ind=2.1192357094136466e-07
+X614 nt_p_7 nt_c_7 rl_admittance res=32.193919749692675 ind=1.2305413994173798e-05
+X615 nt_n_7 nt_c_7 rl_admittance res=289.5529937021893 ind=0.00024308378853209281
+X616 nt_n_7 nt_c_7 rl_admittance res=125471.83046475699 ind=4.268991284863473
+X617 nt_n_7 nt_c_7 rl_admittance res=395247.7346339827 ind=131.6049687490377
+X618 nt_n_7 nt_c_7 rl_admittance res=846460.986429047 ind=3286.6876997748454
+* Transfer network from port 8 to port 7
+R7_8 nt_p_8 nt_c_7 29.99255375261802
+X619 nt_n_8 nt_c_7 rl_admittance res=28.140672790079556 ind=2.435315359780842e-06
+X620 nt_p_8 nt_c_7 rl_admittance res=391.74512741619185 ind=0.0001497359131953052
+X621 nt_n_8 nt_c_7 rl_admittance res=2784.024584024827 ind=0.002337227581723054
+X622 nt_p_8 nt_c_7 rl_admittance res=6112789.567990155 ind=207.97851832793748
+X623 nt_p_8 nt_c_7 rl_admittance res=3096558.6381033715 ind=1031.0558849237714
+X624 nt_p_8 nt_c_7 rl_admittance res=4255060.904652647 ind=16521.7967057327
+* Transfer network from port 9 to port 7
+R7_9 nt_n_9 nt_c_7 28.113048883604105
+X625 nt_p_9 nt_c_7 rl_admittance res=36.93437857472905 ind=3.196329388354465e-06
+X626 nt_p_9 nt_c_7 rl_admittance res=115.51418325315916 ind=4.4152742448907624e-05
+X627 nt_n_9 nt_c_7 rl_admittance res=5870.543153006931 ind=0.004928403095157749
+X628 nt_p_9 nt_c_7 rl_admittance res=349723.7898007137 ind=11.898828647343457
+X629 nt_p_9 nt_c_7 rl_admittance res=234970.7291234988 ind=78.2378056938721
+X630 nt_p_9 nt_c_7 rl_admittance res=534667.9411870742 ind=2076.0396213615672
+* Transfer network from port 10 to port 7
+R7_10 nt_p_10 nt_c_7 104.14019489893087
+X631 nt_p_10 nt_c_7 rl_admittance res=639.9784503412592 ind=5.538422487874013e-05
+X632 nt_n_10 nt_c_7 rl_admittance res=87.1367020867969 ind=3.3306077719077975e-05
+X633 nt_p_10 nt_c_7 rl_admittance res=3169.861103672337 ind=0.0026611427371174387
+X634 nt_n_10 nt_c_7 rl_admittance res=375745.75086154754 ind=12.784186935114342
+X635 nt_n_10 nt_c_7 rl_admittance res=17495654.860840652 ind=5825.498565696062
+X636 nt_n_10 nt_c_7 rl_admittance res=704719.3829191813 ind=2736.3251995873798
+* Transfer network from port 11 to port 7
+R7_11 nt_p_11 nt_c_7 87.37771987097844
+X637 nt_n_11 nt_c_7 rl_admittance res=62.24120823110522 ind=5.386401794557088e-06
+X638 nt_p_11 nt_c_7 rl_admittance res=402.5887750524141 ind=0.00015388065774359628
+X639 nt_p_11 nt_c_7 rl_admittance res=466.74326722228716 ind=0.0003918375017214774
+X640 nt_n_11 nt_c_7 rl_admittance res=872641.609011836 ind=29.690324990732822
+X641 nt_n_11 nt_c_7 rl_admittance res=517421.61354348034 ind=172.28499827715822
+X642 nt_n_11 nt_c_7 rl_admittance res=683674.7393101358 ind=2654.611839603963
+* Transfer network from port 12 to port 7
+R7_12 nt_p_12 nt_c_7 189.57667088732498
+X643 nt_p_12 nt_c_7 rl_admittance res=371.22024659914763 ind=3.2125684241751226e-05
+X644 nt_n_12 nt_c_7 rl_admittance res=122.92305432662152 ind=4.698461960140265e-05
+X645 nt_p_12 nt_c_7 rl_admittance res=6055.449153299118 ind=0.005083634268901269
+X646 nt_p_12 nt_c_7 rl_admittance res=918795.5922451951 ind=31.260645208865665
+X647 nt_n_12 nt_c_7 rl_admittance res=2356130.3362945304 ind=784.5167273731449
+X648 nt_p_12 nt_c_7 rl_admittance res=1825961.1269659027 ind=7089.947525619245
+* Transfer network from port 13 to port 7
+R7_13 nt_p_13 nt_c_7 366.44495372328316
+X649 nt_n_13 nt_c_7 rl_admittance res=135.89828414925435 ind=1.1760741515505354e-05
+X650 nt_p_13 nt_c_7 rl_admittance res=301.9618841432926 ind=0.0001154182536247215
+X651 nt_p_13 nt_c_7 rl_admittance res=758.2508190260834 ind=0.0006365621691205777
+X652 nt_p_13 nt_c_7 rl_admittance res=3840943.3685399387 ind=130.68235081305193
+X653 nt_n_13 nt_c_7 rl_admittance res=1589484.8108137178 ind=529.2480652619638
+X654 nt_n_13 nt_c_7 rl_admittance res=1705809.5057642066 ind=6623.415858072955
+* Transfer network from port 14 to port 7
+R7_14 nt_p_14 nt_c_7 204.02166143027227
+X655 nt_n_14 nt_c_7 rl_admittance res=45.14216852793601 ind=3.906637812463868e-06
+X656 nt_p_14 nt_c_7 rl_admittance res=73.97004637900987 ind=2.8273414698769074e-05
+X657 nt_p_14 nt_c_7 rl_admittance res=267.9313520599475 ind=0.00022493211792603732
+X658 nt_p_14 nt_c_7 rl_admittance res=34683535.08601237 ind=1180.0553834434734
+X659 nt_n_14 nt_c_7 rl_admittance res=2726838.853988021 ind=907.9509146208795
+X660 nt_n_14 nt_c_7 rl_admittance res=4055687.556890244 ind=15747.658334018686
+* Transfer network from port 15 to port 7
+R7_15 nt_n_15 nt_c_7 86.79314316004383
+X661 nt_p_15 nt_c_7 rl_admittance res=83.62237324130639 ind=7.236744177902942e-06
+X662 nt_n_15 nt_c_7 rl_admittance res=1681.152722471602 ind=0.0006425834566989287
+X663 nt_p_15 nt_c_7 rl_admittance res=6310.8432862660575 ind=0.005298041216025862
+X664 nt_n_15 nt_c_7 rl_admittance res=12242470.493273567 ind=416.5317398128093
+X665 nt_n_15 nt_c_7 rl_admittance res=4026314.8541024434 ind=1340.6352373875945
+X666 nt_n_15 nt_c_7 rl_admittance res=6055864.376365332 ind=23514.060631751276
+* Transfer network from port 16 to port 7
+R7_16 nt_p_16 nt_c_7 6.091015502450671
+X667 nt_n_16 nt_c_7 rl_admittance res=5.907012201623508 ind=5.11197356663693e-07
+X668 nt_p_16 nt_c_7 rl_admittance res=174.66178454357134 ind=6.676060524721749e-05
+X669 nt_n_16 nt_c_7 rl_admittance res=1643.0449786058798 ind=0.001379359242746896
+X670 nt_n_16 nt_c_7 rl_admittance res=1900278.873165565 ind=64.65414522371684
+X671 nt_n_16 nt_c_7 rl_admittance res=818524.4912068582 ind=272.5427134588283
+X672 nt_n_16 nt_c_7 rl_admittance res=1174834.2737880684 ind=4561.714501719478
+
+* Port network for port 8
+R_ref_8 p8 a8 50.0
+H_b_8 a8 0 V_c_8 14.142135623730951
+* Differential incident wave a sources for transfer from port 8
+H_p_8 nt_p_8 nts_p_8 H_b_8 3.5355339059327378
+E_p_8 nts_p_8 0 p8 0 0.07071067811865475
+E_n_8 0 nt_n_8 nt_p_8 0 1
+* Current sensor on center node for transfer to port 8
+V_c_8 nt_c_8 0 0
+* Transfer network from port 1 to port 8
+R8_1 nt_n_1 nt_c_8 19.52287150972438
+X673 nt_p_1 nt_c_8 rl_admittance res=23.396511357127956 ind=2.0247519985871508e-06
+X674 nt_p_1 nt_c_8 rl_admittance res=130.9610716442474 ind=5.005697399486445e-05
+X675 nt_p_1 nt_c_8 rl_admittance res=1187.7353783560409 ind=0.000997120464384969
+X676 nt_p_1 nt_c_8 rl_admittance res=1134250.6063900427 ind=38.591179674311604
+X677 nt_p_1 nt_c_8 rl_admittance res=1475992.1965494987 ind=491.45862171886364
+X678 nt_p_1 nt_c_8 rl_admittance res=1067990.3727193445 ind=4146.854819975632
+* Transfer network from port 2 to port 8
+R8_2 nt_n_2 nt_c_8 11.811997501701375
+X679 nt_p_2 nt_c_8 rl_admittance res=14.184566353152642 ind=1.227543227887605e-06
+X680 nt_p_2 nt_c_8 rl_admittance res=80.96921017055064 ind=3.094869030166494e-05
+X681 nt_p_2 nt_c_8 rl_admittance res=553.5250392075609 ind=0.00046469201322207486
+X682 nt_p_2 nt_c_8 rl_admittance res=875483.7144020316 ind=29.787023373919446
+X683 nt_p_2 nt_c_8 rl_admittance res=706487.4925989845 ind=235.23794379536804
+X684 nt_p_2 nt_c_8 rl_admittance res=1390149.2607552127 ind=5397.751992623276
+* Transfer network from port 3 to port 8
+R8_3 nt_n_3 nt_c_8 9.857315043831534
+X685 nt_p_3 nt_c_8 rl_admittance res=11.965969439525754 ind=1.0355441530530245e-06
+X686 nt_p_3 nt_c_8 rl_admittance res=67.62789362723024 ind=2.5849267038846987e-05
+X687 nt_p_3 nt_c_8 rl_admittance res=323.84897661340165 ind=0.0002718757459244034
+X688 nt_p_3 nt_c_8 rl_admittance res=14964724.726156937 ind=509.15236670823055
+X689 nt_p_3 nt_c_8 rl_admittance res=572811.9073690623 ind=190.72821059478545
+X690 nt_p_3 nt_c_8 rl_admittance res=2278724.686126638 ind=8847.96407293546
+* Transfer network from port 4 to port 8
+R8_4 nt_n_4 nt_c_8 370.95475815883265
+X691 nt_p_4 nt_c_8 rl_admittance res=467.4146797842601 ind=4.045042410879881e-05
+X692 nt_p_4 nt_c_8 rl_admittance res=2090.8055390650106 ind=0.000799164188130657
+X693 nt_p_4 nt_c_8 rl_admittance res=12845.590520000125 ind=0.010784052927959614
+X694 nt_p_4 nt_c_8 rl_admittance res=24206465.175736167 ind=823.5887568532332
+X695 nt_p_4 nt_c_8 rl_admittance res=10985605.438944178 ind=3657.858436102984
+X696 nt_p_4 nt_c_8 rl_admittance res=23462908.138265315 ind=91103.13743378624
+* Transfer network from port 5 to port 8
+R8_5 nt_p_5 nt_c_8 34.95425084525361
+X697 nt_n_5 nt_c_8 rl_admittance res=21.730294349328 ind=1.8805563035484096e-06
+X698 nt_p_5 nt_c_8 rl_admittance res=63.97085172130495 ind=2.4451443630068607e-05
+X699 nt_p_5 nt_c_8 rl_admittance res=562.8012962600212 ind=0.0004724795607755594
+X700 nt_p_5 nt_c_8 rl_admittance res=9714401.354924066 ind=330.5179701947936
+X701 nt_p_5 nt_c_8 rl_admittance res=1315612.4530109533 ind=438.0572501565072
+X702 nt_p_5 nt_c_8 rl_admittance res=4564253.459177424 ind=17722.347448308163
+* Transfer network from port 6 to port 8
+R8_6 nt_p_6 nt_c_8 24.569544979632106
+X703 nt_n_6 nt_c_8 rl_admittance res=15.83463241202914 ind=1.370341207445919e-06
+X704 nt_p_6 nt_c_8 rl_admittance res=50.065438608117084 ind=1.9136406925989623e-05
+X705 nt_p_6 nt_c_8 rl_admittance res=403.6287060151256 ind=0.0003388519447302858
+X706 nt_n_6 nt_c_8 rl_admittance res=4224798.824658073 ind=143.74245833476283
+X707 nt_p_6 nt_c_8 rl_admittance res=1247834.1315526974 ind=415.4892172602876
+X708 nt_p_6 nt_c_8 rl_admittance res=16021794.115385981 ind=62210.3493151106
+* Transfer network from port 7 to port 8
+R8_7 nt_p_7 nt_c_8 29.991971179034675
+X709 nt_n_7 nt_c_8 rl_admittance res=28.14002791215095 ind=2.435259551551365e-06
+X710 nt_p_7 nt_c_8 rl_admittance res=391.6380419583231 ind=0.00014969498214676945
+X711 nt_n_7 nt_c_8 rl_admittance res=2779.952128996977 ind=0.0023338086987609442
+X712 nt_p_7 nt_c_8 rl_admittance res=6298736.459557741 ind=214.30508307644845
+X713 nt_p_7 nt_c_8 rl_admittance res=3081216.7817434 ind=1025.9475329969068
+X714 nt_p_7 nt_c_8 rl_admittance res=4276227.555864015 ind=16603.98380389456
+* Transfer network from port 8 to port 8
+R8_8 nt_n_8 nt_c_8 1.371694682068885
+X715 nt_n_8 nt_c_8 rl_admittance res=3.4408573391298334 ind=2.977744274739436e-07
+X716 nt_p_8 nt_c_8 rl_admittance res=44.26130860063224 ind=1.691790656401398e-05
+X717 nt_n_8 nt_c_8 rl_admittance res=341.21247153227915 ind=0.00028645264279247596
+X718 nt_n_8 nt_c_8 rl_admittance res=148816.04270204276 ind=5.063243175696994
+X719 nt_n_8 nt_c_8 rl_admittance res=824552.0257084671 ind=274.54969141267435
+X720 nt_p_8 nt_c_8 rl_admittance res=40094882.56993676 ind=155682.73018992133
+* Transfer network from port 9 to port 8
+R8_9 nt_n_9 nt_c_8 147.79076912275917
+X721 nt_n_9 nt_c_8 rl_admittance res=120.00179919496641 ind=1.0385047541715574e-05
+X722 nt_p_9 nt_c_8 rl_admittance res=69.69192890932835 ind=2.6638198888161208e-05
+X723 nt_p_9 nt_c_8 rl_admittance res=1330.1983276586668 ind=0.0011167201031217588
+X724 nt_p_9 nt_c_8 rl_admittance res=3737533.5983434822 ind=127.16398811679393
+X725 nt_n_9 nt_c_8 rl_admittance res=891434.6279800892 ind=296.81947820844755
+X726 nt_n_9 nt_c_8 rl_admittance res=3896558.877882659 ind=15129.784290960839
+* Transfer network from port 10 to port 8
+R8_10 nt_p_10 nt_c_8 122.96997105044927
+X727 nt_n_10 nt_c_8 rl_admittance res=48.92013090908626 ind=4.233585568266383e-06
+X728 nt_p_10 nt_c_8 rl_admittance res=110.66000873582648 ind=4.229734156886046e-05
+X729 nt_p_10 nt_c_8 rl_admittance res=305.2887398220847 ind=0.0002562941675141784
+X730 nt_n_10 nt_c_8 rl_admittance res=360520.31320559443 ind=12.266164201081203
+X731 nt_p_10 nt_c_8 rl_admittance res=1427603.511000602 ind=475.3467230501292
+X732 nt_n_10 nt_c_8 rl_admittance res=1267111.2012862184 ind=4920.012695544867
+* Transfer network from port 11 to port 8
+R8_11 nt_p_11 nt_c_8 113.53278073919694
+X733 nt_n_11 nt_c_8 rl_admittance res=19.298173880329465 ind=1.67007873681882e-06
+X734 nt_p_11 nt_c_8 rl_admittance res=27.80286033600025 ind=1.0627028622693359e-05
+X735 nt_p_11 nt_c_8 rl_admittance res=142.00991458964103 ind=0.0001192193097581082
+X736 nt_n_11 nt_c_8 rl_admittance res=801624.7806403254 ind=27.274083669683634
+X737 nt_p_11 nt_c_8 rl_admittance res=505103.86807937885 ind=168.18357943319475
+X738 nt_p_11 nt_c_8 rl_admittance res=3308146.3986212495 ind=12845.062267160154
+* Transfer network from port 12 to port 8
+R8_12 nt_p_12 nt_c_8 225.67465105346113
+X739 nt_n_12 nt_c_8 rl_admittance res=132.26857012224943 ind=1.1446623285727521e-05
+X740 nt_p_12 nt_c_8 rl_admittance res=1061.36093663503 ind=0.000405681750594001
+X741 nt_p_12 nt_c_8 rl_admittance res=456.7798783027453 ind=0.00038347309735385437
+X742 nt_n_12 nt_c_8 rl_admittance res=504404.77770376886 ind=17.161617807637818
+X743 nt_p_12 nt_c_8 rl_admittance res=2681443.6978026526 ind=892.8357663540197
+X744 nt_n_12 nt_c_8 rl_admittance res=1670851.9205833755 ind=6487.680523462469
+* Transfer network from port 13 to port 8
+R8_13 nt_p_13 nt_c_8 59.380277665324286
+X745 nt_n_13 nt_c_8 rl_admittance res=28.971500627106497 ind=2.5072158366435877e-06
+X746 nt_p_13 nt_c_8 rl_admittance res=74.95121906038902 ind=2.8648446261810082e-05
+X747 nt_p_13 nt_c_8 rl_admittance res=230.71987969375743 ind=0.00019369256635388458
+X748 nt_n_13 nt_c_8 rl_admittance res=726512.3443802551 ind=24.71849541858874
+X749 nt_p_13 nt_c_8 rl_admittance res=875737.4717491374 ind=291.5928226853331
+X750 nt_n_13 nt_c_8 rl_admittance res=132715395.25957888 ind=515315.01647888165
+* Transfer network from port 14 to port 8
+R8_14 nt_p_14 nt_c_8 50.97925276562365
+X751 nt_n_14 nt_c_8 rl_admittance res=33.87305594784817 ind=2.9314001853428062e-06
+X752 nt_n_14 nt_c_8 rl_admittance res=8700.2385731696 ind=0.003325473826216948
+X753 nt_p_14 nt_c_8 rl_admittance res=99.78346054210304 ind=8.376961091400245e-05
+X754 nt_n_14 nt_c_8 rl_admittance res=611614.7385625099 ind=20.809276304857825
+X755 nt_p_14 nt_c_8 rl_admittance res=830599.2194454054 ind=276.5632152688101
+X756 nt_n_14 nt_c_8 rl_admittance res=5925608.098500518 ind=23008.294018593107
+* Transfer network from port 15 to port 8
+R8_15 nt_n_15 nt_c_8 12.643134616003232
+X757 nt_p_15 nt_c_8 rl_admittance res=12.310193573648345 ind=1.0653335730604783e-06
+X758 nt_n_15 nt_c_8 rl_admittance res=359.7824032751923 ind=0.0001375188686106573
+X759 nt_p_15 nt_c_8 rl_admittance res=1561.4852500108898 ind=0.0013108887097193196
+X760 nt_n_15 nt_c_8 rl_admittance res=1678061.3134808005 ind=57.09352526524459
+X761 nt_p_15 nt_c_8 rl_admittance res=2235365.6966461204 ind=744.3059298548857
+X762 nt_p_15 nt_c_8 rl_admittance res=229207569.9109475 ind=889980.4158720562
+* Transfer network from port 16 to port 8
+R8_16 nt_p_16 nt_c_8 84.55633934351941
+X763 nt_n_16 nt_c_8 rl_admittance res=83.06182036139677 ind=7.188233502675073e-06
+X764 nt_p_16 nt_c_8 rl_admittance res=2979.4358094721656 ind=0.001138823460755235
+X765 nt_n_16 nt_c_8 rl_admittance res=8105.809346569423 ind=0.006804940331957081
+X766 nt_p_16 nt_c_8 rl_admittance res=11748274.047915772 ind=399.71744523825515
+X767 nt_p_16 nt_c_8 rl_admittance res=3695892.1122037205 ind=1230.61493667209
+X768 nt_p_16 nt_c_8 rl_admittance res=5956671.768779909 ind=23128.909835097365
+
+* Port network for port 9
+R_ref_9 p9 a9 50.0
+H_b_9 a9 0 V_c_9 14.142135623730951
+* Differential incident wave a sources for transfer from port 9
+H_p_9 nt_p_9 nts_p_9 H_b_9 3.5355339059327378
+E_p_9 nts_p_9 0 p9 0 0.07071067811865475
+E_n_9 0 nt_n_9 nt_p_9 0 1
+* Current sensor on center node for transfer to port 9
+V_c_9 nt_c_9 0 0
+* Transfer network from port 1 to port 9
+R9_1 nt_p_1 nt_c_9 3.666204122663888
+X769 nt_n_1 nt_c_9 rl_admittance res=6.115073630717321 ind=5.292031519703617e-07
+X770 nt_n_1 nt_c_9 rl_admittance res=9.172436814849636 ind=3.505961163464822e-06
+X771 nt_n_1 nt_c_9 rl_admittance res=4615.291527877364 ind=0.00387460179717706
+X772 nt_n_1 nt_c_9 rl_admittance res=68004.71883495891 ind=2.313758801164332
+X773 nt_p_1 nt_c_9 rl_admittance res=64254.71614566972 ind=21.394784003404887
+X774 nt_p_1 nt_c_9 rl_admittance res=144782.65900781815 ind=562.1704864499143
+* Transfer network from port 2 to port 9
+R9_2 nt_p_2 nt_c_9 15.96572687883454
+X775 nt_p_2 nt_c_9 rl_admittance res=18.239745694425473 ind=1.5784815515779027e-06
+X776 nt_n_2 nt_c_9 rl_admittance res=9.047146578663613 ind=3.458071740937714e-06
+X777 nt_n_2 nt_c_9 rl_admittance res=144.0765764177703 ind=0.00012095430127165829
+X778 nt_n_2 nt_c_9 rl_admittance res=404304.52454688656 ind=13.755856476536593
+X779 nt_p_2 nt_c_9 rl_admittance res=78901.09329556173 ind=26.271563395659072
+X780 nt_p_2 nt_c_9 rl_admittance res=309096.50359000795 ind=1200.1777904478138
+* Transfer network from port 3 to port 9
+R9_3 nt_p_3 nt_c_9 77.89565066532974
+X781 nt_p_3 nt_c_9 rl_admittance res=8.018721137189871 ind=6.939462640737591e-07
+X782 nt_n_3 nt_c_9 rl_admittance res=8.051176428634307 ind=3.077384172687595e-06
+X783 nt_n_3 nt_c_9 rl_admittance res=74.88088390546237 ind=6.286354948584315e-05
+X784 nt_p_3 nt_c_9 rl_admittance res=985820.6445912118 ind=33.54107232364369
+X785 nt_p_3 nt_c_9 rl_admittance res=100192.18934598433 ind=33.3608235857103
+X786 nt_p_3 nt_c_9 rl_admittance res=310999.5593217271 ind=1207.5670853659578
+* Transfer network from port 4 to port 9
+R9_4 nt_p_4 nt_c_9 853.535156807408
+X787 nt_p_4 nt_c_9 rl_admittance res=317.5767889648639 ind=2.7483338363845343e-05
+X788 nt_n_4 nt_c_9 rl_admittance res=250.52848191735856 ind=9.57589728524564e-05
+X789 nt_n_4 nt_c_9 rl_admittance res=3029.6998956369516 ind=0.0025434754423716665
+X790 nt_p_4 nt_c_9 rl_admittance res=10953716.540341195 ind=372.6838149596927
+X791 nt_p_4 nt_c_9 rl_admittance res=1209486.7737911844 ind=402.7207624973892
+X792 nt_p_4 nt_c_9 rl_admittance res=3672660.160944482 ind=14260.417396615778
+* Transfer network from port 5 to port 9
+R9_5 nt_n_5 nt_c_9 16.030047550598002
+X793 nt_p_5 nt_c_9 rl_admittance res=7.496265991476726 ind=6.487325959200859e-07
+X794 nt_n_5 nt_c_9 rl_admittance res=16.878229183656643 ind=6.451329915967244e-06
+X795 nt_n_5 nt_c_9 rl_admittance res=84.88464049452877 ind=7.12618430767022e-05
+X796 nt_p_5 nt_c_9 rl_admittance res=247857.76349620512 ind=8.432989527065642
+X797 nt_p_5 nt_c_9 rl_admittance res=199036.15433160134 ind=66.27273118970817
+X798 nt_p_5 nt_c_9 rl_admittance res=366383.41077696375 ind=1422.614708661638
+* Transfer network from port 6 to port 9
+R9_6 nt_n_6 nt_c_9 12.339515745847933
+X799 nt_p_6 nt_c_9 rl_admittance res=5.56069437387756 ind=4.812267468077351e-07
+X800 nt_n_6 nt_c_9 rl_admittance res=12.09891527485706 ind=4.6245428483113e-06
+X801 nt_n_6 nt_c_9 rl_admittance res=61.911169812256794 ind=5.19752930819148e-05
+X802 nt_p_6 nt_c_9 rl_admittance res=202244.85319790244 ind=6.881078505926856
+X803 nt_p_6 nt_c_9 rl_admittance res=268946.59426102 ind=89.55069196198876
+X804 nt_p_6 nt_c_9 rl_admittance res=415595.87358295644 ind=1613.6997069938575
+* Transfer network from port 7 to port 9
+R9_7 nt_n_7 nt_c_9 28.126294376102145
+X805 nt_p_7 nt_c_9 rl_admittance res=36.947771324742135 ind=3.1974884071902926e-06
+X806 nt_p_7 nt_c_9 rl_admittance res=115.60958643683128 ind=4.418920820643498e-05
+X807 nt_n_7 nt_c_9 rl_admittance res=5876.992502242768 ind=0.004933817414055886
+X808 nt_p_7 nt_c_9 rl_admittance res=351048.5586063661 ind=11.94390192367043
+X809 nt_p_7 nt_c_9 rl_admittance res=234829.2198705136 ind=78.19068759758734
+X810 nt_p_7 nt_c_9 rl_admittance res=536159.7321416276 ind=2081.8320336045113
+* Transfer network from port 8 to port 9
+R9_8 nt_n_8 nt_c_9 146.45245694201492
+X811 nt_n_8 nt_c_9 rl_admittance res=120.84670599332372 ind=1.0458166422666715e-05
+X812 nt_p_8 nt_c_9 rl_admittance res=69.67524438337529 ind=2.663182159702222e-05
+X813 nt_p_8 nt_c_9 rl_admittance res=1330.2877059302348 ind=0.0011167951374309794
+X814 nt_p_8 nt_c_9 rl_admittance res=3526726.274088845 ind=119.9915843454055
+X815 nt_n_8 nt_c_9 rl_admittance res=887481.6324884606 ind=295.50325599499797
+X816 nt_n_8 nt_c_9 rl_admittance res=3987856.041738038 ind=15484.278201818659
+* Transfer network from port 9 to port 9
+R9_9 nt_p_9 nt_c_9 0.6059858294175106
+X817 nt_n_9 nt_c_9 rl_admittance res=0.4418616835377873 ind=3.823904825749382e-08
+X818 nt_n_9 nt_c_9 rl_admittance res=2.5954471247849296 ind=9.920522762926843e-07
+X819 nt_p_9 nt_c_9 rl_admittance res=154.29966530840434 ind=0.00012953672739774287
+X820 nt_n_9 nt_c_9 rl_admittance res=6098.838869238259 ind=0.20750386667769052
+X821 nt_n_9 nt_c_9 rl_admittance res=14432.053868568926 ind=4.805416532282742
+X822 nt_n_9 nt_c_9 rl_admittance res=90671.33350316467 ind=352.06390055168146
+* Transfer network from port 10 to port 9
+R9_10 nt_n_10 nt_c_9 14.731744158586306
+X823 nt_p_10 nt_c_9 rl_admittance res=7.353162991420404 ind=6.363483527760933e-07
+X824 nt_n_10 nt_c_9 rl_admittance res=20.093448635855495 ind=7.680276460813038e-06
+X825 nt_n_10 nt_c_9 rl_admittance res=54.47835075376401 ind=4.573533751070666e-05
+X826 nt_p_10 nt_c_9 rl_admittance res=99814.29587217257 ind=3.3960320623741533
+X827 nt_n_10 nt_c_9 rl_admittance res=226176.7735425322 ind=75.30969719886639
+X828 nt_p_10 nt_c_9 rl_admittance res=429181.870124669 ind=1666.45220053902
+* Transfer network from port 11 to port 9
+R9_11 nt_n_11 nt_c_9 5.481665477351014
+X829 nt_p_11 nt_c_9 rl_admittance res=2.8509205865965583 ind=2.4672084942125435e-07
+X830 nt_n_11 nt_c_9 rl_admittance res=7.6925656531673186 ind=2.9403131329011107e-06
+X831 nt_n_11 nt_c_9 rl_admittance res=26.063374182068365 ind=2.1880567204989703e-05
+X832 nt_p_11 nt_c_9 rl_admittance res=54969.14169665029 ind=1.8702427944999047
+X833 nt_p_11 nt_c_9 rl_admittance res=265590.6245212277 ind=88.43326040191397
+X834 nt_p_11 nt_c_9 rl_admittance res=228805.37823627747 ind=888.4187627642544
+* Transfer network from port 12 to port 9
+R9_12 nt_n_12 nt_c_9 70.15814902612874
+X835 nt_p_12 nt_c_9 rl_admittance res=116.76430830733455 ind=1.010487260259401e-05
+X836 nt_p_12 nt_c_9 rl_admittance res=58.63448646826194 ind=2.2411736002871546e-05
+X837 nt_n_12 nt_c_9 rl_admittance res=87.94376066290292 ind=7.383001724957279e-05
+X838 nt_p_12 nt_c_9 rl_admittance res=142488.15266464755 ind=4.847946185757867
+X839 nt_n_12 nt_c_9 rl_admittance res=354721.23530236643 ind=118.11092890846959
+X840 nt_p_12 nt_c_9 rl_admittance res=746502.8887799784 ind=2898.564614005641
+* Transfer network from port 13 to port 9
+R9_13 nt_n_13 nt_c_9 10.00376925838344
+X841 nt_p_13 nt_c_9 rl_admittance res=6.542933812195389 ind=5.662304995240238e-07
+X842 nt_n_13 nt_c_9 rl_admittance res=34.28872283218211 ind=1.310610615488995e-05
+X843 nt_n_13 nt_c_9 rl_admittance res=42.14117874810057 ind=3.537810903738188e-05
+X844 nt_p_13 nt_c_9 rl_admittance res=71600.83743120843 ind=2.4361113554377534
+X845 nt_p_13 nt_c_9 rl_admittance res=689358.4914790379 ind=229.5345293047566
+X846 nt_p_13 nt_c_9 rl_admittance res=245572.48579930363 ind=953.5230582624844
+* Transfer network from port 14 to port 9
+R9_14 nt_n_14 nt_c_9 10.380547257386993
+X847 nt_p_14 nt_c_9 rl_admittance res=7.16163552643683 ind=6.197734193772438e-07
+X848 nt_p_14 nt_c_9 rl_admittance res=474.39303915390286 ind=0.00018132625005374813
+X849 nt_n_14 nt_c_9 rl_admittance res=22.01283426635501 ind=1.848008228607097e-05
+X850 nt_p_14 nt_c_9 rl_admittance res=57106.022519783335 ind=1.9429469670377335
+X851 nt_p_14 nt_c_9 rl_admittance res=94556389.31532255 ind=31484.280795154104
+X852 nt_p_14 nt_c_9 rl_admittance res=258662.04923769468 ind=1004.3479726272631
+* Transfer network from port 15 to port 9
+R9_15 nt_p_15 nt_c_9 217.76035718445777
+X853 nt_p_15 nt_c_9 rl_admittance res=110.91332399272775 ind=9.598523942151823e-06
+X854 nt_n_15 nt_c_9 rl_admittance res=78.5784888733684 ind=3.0034889946341746e-05
+X855 nt_n_15 nt_c_9 rl_admittance res=1132.7613717930014 ind=0.0009509690168890536
+X856 nt_n_15 nt_c_9 rl_admittance res=8793798.654573599 ind=299.195840836668
+X857 nt_p_15 nt_c_9 rl_admittance res=1483130.0236865806 ind=493.83529193098155
+X858 nt_p_15 nt_c_9 rl_admittance res=5465547.407446416 ind=21221.943745302422
+* Transfer network from port 16 to port 9
+R9_16 nt_n_16 nt_c_9 18.103089845664858
+X859 nt_p_16 nt_c_9 rl_admittance res=24.67323493397712 ind=2.135240634025576e-06
+X860 nt_p_16 nt_c_9 rl_admittance res=65.12989573628587 ind=2.489446257751895e-05
+X861 nt_n_16 nt_c_9 rl_admittance res=1531.4628109631951 ind=0.0012856844521795285
+X862 nt_p_16 nt_c_9 rl_admittance res=238621.26083793223 ind=8.118731344932396
+X863 nt_p_16 nt_c_9 rl_admittance res=392143.5001606115 ind=130.57135705424577
+X864 nt_p_16 nt_c_9 rl_admittance res=579556.9845891743 ind=2250.3373966515433
+
+* Port network for port 10
+R_ref_10 p10 a10 50.0
+H_b_10 a10 0 V_c_10 14.142135623730951
+* Differential incident wave a sources for transfer from port 10
+H_p_10 nt_p_10 nts_p_10 H_b_10 3.5355339059327378
+E_p_10 nts_p_10 0 p10 0 0.07071067811865475
+E_n_10 0 nt_n_10 nt_p_10 0 1
+* Current sensor on center node for transfer to port 10
+V_c_10 nt_c_10 0 0
+* Transfer network from port 1 to port 10
+R10_1 nt_n_1 nt_c_10 27.69391474827923
+X865 nt_p_1 nt_c_10 rl_admittance res=11.038459410867874 ind=9.5527672533404e-07
+X866 nt_n_1 nt_c_10 rl_admittance res=24.7955316518775 ind=9.47754372733396e-06
+X867 nt_n_1 nt_c_10 rl_admittance res=70.61804105658292 ind=5.928483328480005e-05
+X868 nt_p_1 nt_c_10 rl_admittance res=125808.65130454142 ind=4.280451109943525
+X869 nt_n_1 nt_c_10 rl_admittance res=686771.0594393449 ind=228.67299644097082
+X870 nt_p_1 nt_c_10 rl_admittance res=1366847.8571293827 ind=5307.275954256062
+* Transfer network from port 2 to port 10
+R10_2 nt_n_2 nt_c_10 15.860832230187253
+X871 nt_p_2 nt_c_10 rl_admittance res=5.036079529892891 ind=4.3582617671279104e-07
+X872 nt_n_2 nt_c_10 rl_admittance res=9.459875815992994 ind=3.615828366173948e-06
+X873 nt_n_2 nt_c_10 rl_admittance res=33.5202038396212 ind=2.8140680009973306e-05
+X874 nt_p_2 nt_c_10 rl_admittance res=44355.90580730826 ind=1.5091433242205772
+X875 nt_n_2 nt_c_10 rl_admittance res=207335.85562688438 ind=69.03626867235452
+X876 nt_p_2 nt_c_10 rl_admittance res=171206.68176156605 ind=664.7712110618025
+* Transfer network from port 3 to port 10
+R10_3 nt_n_3 nt_c_10 8.951229255553626
+X877 nt_p_3 nt_c_10 rl_admittance res=3.9590468435060875 ind=3.426189437617557e-07
+X878 nt_n_3 nt_c_10 rl_admittance res=10.350498044184425 ind=3.9562490206179815e-06
+X879 nt_n_3 nt_c_10 rl_admittance res=22.58490478605171 ind=1.8960343489581174e-05
+X880 nt_p_3 nt_c_10 rl_admittance res=41452.55861654739 ind=1.4103612804073853
+X881 nt_n_3 nt_c_10 rl_admittance res=137015.8588456176 ind=45.621938448802204
+X882 nt_p_3 nt_c_10 rl_admittance res=212714.2219543116 ind=825.9390900150071
+* Transfer network from port 4 to port 10
+R10_4 nt_n_4 nt_c_10 485.04800755569374
+X883 nt_p_4 nt_c_10 rl_admittance res=130.6650322125168 ind=1.1307851887804885e-05
+X884 nt_n_4 nt_c_10 rl_admittance res=231.70912829357854 ind=8.856569103887486e-05
+X885 nt_n_4 nt_c_10 rl_admittance res=783.2481011148623 ind=0.0006575477371005639
+X886 nt_p_4 nt_c_10 rl_admittance res=1008772.7315079996 ind=34.32198273719439
+X887 nt_n_4 nt_c_10 rl_admittance res=4294632.080717095 ind=1429.9763698703655
+X888 nt_p_4 nt_c_10 rl_admittance res=4471933.3855441455 ind=17363.88172417258
+* Transfer network from port 5 to port 10
+R10_5 nt_n_5 nt_c_10 11.799625518566165
+X889 nt_p_5 nt_c_10 rl_admittance res=5.449382047069175 ind=4.715936928565528e-07
+X890 nt_n_5 nt_c_10 rl_admittance res=15.150080913080894 ind=5.790783450110036e-06
+X891 nt_n_5 nt_c_10 rl_admittance res=30.514776840316074 ind=2.5617582003605824e-05
+X892 nt_p_5 nt_c_10 rl_admittance res=51727.56407693677 ind=1.759952966444416
+X893 nt_n_5 nt_c_10 rl_admittance res=205042.48895552818 ind=68.27265025618973
+X894 nt_p_5 nt_c_10 rl_admittance res=235556.33188326564 ind=914.6317562383088
+* Transfer network from port 6 to port 10
+R10_6 nt_n_6 nt_c_10 7.973693250218743
+X895 nt_p_6 nt_c_10 rl_admittance res=4.332076295717801 ind=3.749011980418337e-07
+X896 nt_n_6 nt_c_10 rl_admittance res=16.43596968113987 ind=6.282285999798005e-06
+X897 nt_n_6 nt_c_10 rl_admittance res=22.419653235918627 ind=1.882161250167619e-05
+X898 nt_p_6 nt_c_10 rl_admittance res=41671.436344916925 ind=1.4178082676028319
+X899 nt_n_6 nt_c_10 rl_admittance res=150030.07845355404 ind=49.95526110878318
+X900 nt_p_6 nt_c_10 rl_admittance res=208815.66711369163 ind=810.8015556844307
+* Transfer network from port 7 to port 10
+R10_7 nt_p_7 nt_c_10 104.43119264160897
+X901 nt_p_7 nt_c_10 rl_admittance res=638.8396085819363 ind=5.5285668641313694e-05
+X902 nt_n_7 nt_c_10 rl_admittance res=87.2958866093162 ind=3.3366922483129535e-05
+X903 nt_p_7 nt_c_10 rl_admittance res=3143.166152878885 ind=0.0026387319525125862
+X904 nt_n_7 nt_c_10 rl_admittance res=374437.78828247474 ind=12.739685465499157
+X905 nt_n_7 nt_c_10 rl_admittance res=16895261.019252446 ind=5625.586445181311
+X906 nt_n_7 nt_c_10 rl_admittance res=704772.3362208904 ind=2736.530809731474
+* Transfer network from port 8 to port 10
+R10_8 nt_p_8 nt_c_10 122.9881083943539
+X907 nt_n_8 nt_c_10 rl_admittance res=48.886424653376494 ind=4.2306686031013e-06
+X908 nt_p_8 nt_c_10 rl_admittance res=110.50574984268962 ind=4.223837951773122e-05
+X909 nt_p_8 nt_c_10 rl_admittance res=305.05123564318006 ind=0.00025609477943373696
+X910 nt_n_8 nt_c_10 rl_admittance res=360357.4977084502 ind=12.26062464741585
+X911 nt_p_8 nt_c_10 rl_admittance res=1429385.174217721 ind=475.93996043383584
+X912 nt_n_8 nt_c_10 rl_admittance res=1269408.482816029 ind=4928.932713204277
+* Transfer network from port 9 to port 10
+R10_9 nt_n_9 nt_c_10 14.697553527370715
+X913 nt_p_9 nt_c_10 rl_admittance res=7.334863539047949 ind=6.347647041629043e-07
+X914 nt_n_9 nt_c_10 rl_admittance res=20.028645965209293 ind=7.655507072791027e-06
+X915 nt_n_9 nt_c_10 rl_admittance res=54.41757938719516 ind=4.568431909839136e-05
+X916 nt_p_9 nt_c_10 rl_admittance res=99640.97555314841 ind=3.3901350978629696
+X917 nt_n_9 nt_c_10 rl_admittance res=225916.1185017906 ind=75.2229073314359
+X918 nt_p_9 nt_c_10 rl_admittance res=427797.1394705228 ind=1661.0754882256938
+* Transfer network from port 10 to port 10
+R10_10 nt_p_10 nt_c_10 1.1885178408838237
+X919 nt_p_10 nt_c_10 rl_admittance res=5.232040849713175 ind=4.527848193025126e-07
+X920 nt_n_10 nt_c_10 rl_admittance res=0.5311591216583411 ind=2.030238299531702e-07
+X921 nt_n_10 nt_c_10 rl_admittance res=7.642956389618853 ind=6.416368800127066e-06
+X922 nt_n_10 nt_c_10 rl_admittance res=91696.51253939973 ind=3.1198366313227894
+X923 nt_n_10 nt_c_10 rl_admittance res=79210.21548966948 ind=26.374491289054482
+X924 nt_n_10 nt_c_10 rl_admittance res=31759.102736720924 ind=123.31608189176235
+* Transfer network from port 11 to port 10
+R10_11 nt_n_11 nt_c_10 5.592315486207438
+X925 nt_p_11 nt_c_10 rl_admittance res=3.5955460319417845 ind=3.111613053357326e-07
+X926 nt_n_11 nt_c_10 rl_admittance res=66.53873639620231 ind=2.5432960769316864e-05
+X927 nt_n_11 nt_c_10 rl_admittance res=11.860339323039936 ind=9.956920766241436e-06
+X928 nt_p_11 nt_c_10 rl_admittance res=24006.817203995735 ind=0.8167960333531169
+X929 nt_n_11 nt_c_10 rl_admittance res=88111.40821440218 ind=29.338306354186777
+X930 nt_p_11 nt_c_10 rl_admittance res=124791.76392177741 ind=484.5486822082761
+* Transfer network from port 12 to port 10
+R10_12 nt_n_12 nt_c_10 2.654463131025768
+X931 nt_p_12 nt_c_10 rl_admittance res=1.5214016510240087 ind=1.316632632337369e-07
+X932 nt_n_12 nt_c_10 rl_admittance res=5.229965973325453 ind=1.999038855087727e-06
+X933 nt_n_12 nt_c_10 rl_admittance res=11.187044781517015 ind=9.39168058046838e-06
+X934 nt_p_12 nt_c_10 rl_admittance res=24232.196684756324 ind=0.8244642329449309
+X935 nt_n_12 nt_c_10 rl_admittance res=55092.964323299755 ind=18.344211016855066
+X936 nt_p_12 nt_c_10 rl_admittance res=168804.94844962147 ind=655.4456219784722
+* Transfer network from port 13 to port 10
+R10_13 nt_n_13 nt_c_10 8.02588714781104
+X937 nt_p_13 nt_c_10 rl_admittance res=5.25251765538377 ind=4.545568977364876e-07
+X938 nt_n_13 nt_c_10 rl_admittance res=86.87189596667069 ind=3.3204861434708785e-05
+X939 nt_n_13 nt_c_10 rl_admittance res=18.41440412387358 ind=1.5459149845972872e-05
+X940 nt_p_13 nt_c_10 rl_admittance res=33656.2151770316 ind=1.1451023607453825
+X941 nt_n_13 nt_c_10 rl_admittance res=131361.34531322948 ind=43.73916465527223
+X942 nt_p_13 nt_c_10 rl_admittance res=160557.07212822844 ind=623.4202905226804
+* Transfer network from port 14 to port 10
+R10_14 nt_n_14 nt_c_10 18.11128949457244
+X943 nt_p_14 nt_c_10 rl_admittance res=18.645196771515515 ind=1.6135695980877627e-06
+X944 nt_p_14 nt_c_10 rl_admittance res=11.334848172074036 ind=4.332495092332043e-06
+X945 nt_n_14 nt_c_10 rl_admittance res=11.53793442287867 ind=9.6862573426986e-06
+X946 nt_p_14 nt_c_10 rl_admittance res=34522.64324546549 ind=1.17458127931543
+X947 nt_n_14 nt_c_10 rl_admittance res=140208.21824325048 ind=46.68489295036369
+X948 nt_p_14 nt_c_10 rl_admittance res=162352.16361570416 ind=630.3903756257716
+* Transfer network from port 15 to port 10
+R10_15 nt_n_15 nt_c_10 109.84076999519318
+X949 nt_p_15 nt_c_10 rl_admittance res=47.973574545828036 ind=4.151669856174607e-06
+X950 nt_n_15 nt_c_10 rl_admittance res=118.94214986622552 ind=4.546300689200607e-05
+X951 nt_n_15 nt_c_10 rl_admittance res=299.6832775438297 ind=0.0002515883035213736
+X952 nt_p_15 nt_c_10 rl_admittance res=371667.14513485663 ind=12.645418478185452
+X953 nt_n_15 nt_c_10 rl_admittance res=1564046.3273728413 ind=520.7778565171631
+X954 nt_p_15 nt_c_10 rl_admittance res=1263343.1954659242 ind=4905.382064504816
+* Transfer network from port 16 to port 10
+R10_16 nt_p_16 nt_c_10 93.95984098750557
+X955 nt_p_16 nt_c_10 rl_admittance res=132.3672913529532 ind=1.1455166696585632e-05
+X956 nt_n_16 nt_c_10 rl_admittance res=54.63929362009485 ind=2.0884661873175745e-05
+X957 nt_p_16 nt_c_10 rl_admittance res=9217.57541456782 ind=0.007738283497624498
+X958 nt_n_16 nt_c_10 rl_admittance res=396374.31452360726 ind=13.48604294667002
+X959 nt_p_16 nt_c_10 rl_admittance res=76247088.68707788 ind=25387.863976400495
+X960 nt_n_16 nt_c_10 rl_admittance res=840060.0425121123 ind=3261.8337443344535
+
+* Port network for port 11
+R_ref_11 p11 a11 50.0
+H_b_11 a11 0 V_c_11 14.142135623730951
+* Differential incident wave a sources for transfer from port 11
+H_p_11 nt_p_11 nts_p_11 H_b_11 3.5355339059327378
+E_p_11 nts_p_11 0 p11 0 0.07071067811865475
+E_n_11 0 nt_n_11 nt_p_11 0 1
+* Current sensor on center node for transfer to port 11
+V_c_11 nt_c_11 0 0
+* Transfer network from port 1 to port 11
+R11_1 nt_n_1 nt_c_11 9.439978866079068
+X961 nt_p_1 nt_c_11 rl_admittance res=3.8402959346555576 ind=3.32342149227775e-07
+X962 nt_n_1 nt_c_11 rl_admittance res=7.976092860719708 ind=3.048685139002589e-06
+X963 nt_n_1 nt_c_11 rl_admittance res=34.37995043339391 ind=2.886244930173474e-05
+X964 nt_p_1 nt_c_11 rl_admittance res=112137.70634641702 ind=3.815317663926939
+X965 nt_n_1 nt_c_11 rl_admittance res=151955.02244516552 ind=50.59620644929039
+X966 nt_n_1 nt_c_11 rl_admittance res=209384.08340815245 ind=813.0086353647799
+* Transfer network from port 2 to port 11
+R11_2 nt_n_2 nt_c_11 5.0885808289581425
+X967 nt_p_2 nt_c_11 rl_admittance res=2.1171364393004737 ind=1.8321860773697547e-07
+X968 nt_n_2 nt_c_11 rl_admittance res=4.564283656081202 ind=1.744596508024051e-06
+X969 nt_n_2 nt_c_11 rl_admittance res=17.630266710255327 ind=1.4800855518585847e-05
+X970 nt_p_2 nt_c_11 rl_admittance res=70661.47091611552 ind=2.40415081535979
+X971 nt_n_2 nt_c_11 rl_admittance res=61133.88676981166 ind=20.35564673203957
+X972 nt_n_2 nt_c_11 rl_admittance res=507993.20990953315 ind=1972.4654311858899
+* Transfer network from port 3 to port 11
+R11_3 nt_n_3 nt_c_11 4.341634220580678
+X973 nt_p_3 nt_c_11 rl_admittance res=1.566897857090623 ind=1.356005397257488e-07
+X974 nt_n_3 nt_c_11 rl_admittance res=3.120623141947198 ind=1.1927891968428675e-06
+X975 nt_n_3 nt_c_11 rl_admittance res=11.436999491968844 ind=9.601521056303922e-06
+X976 nt_p_3 nt_c_11 rl_admittance res=36753.67413016805 ind=1.2504887668190232
+X977 nt_n_3 nt_c_11 rl_admittance res=45903.920719995745 ind=15.284550732233177
+X978 nt_p_3 nt_c_11 rl_admittance res=286513.6734638701 ind=1112.491870846481
+* Transfer network from port 4 to port 11
+R11_4 nt_n_4 nt_c_11 131.882297209146
+X979 nt_p_4 nt_c_11 rl_admittance res=53.707521618303495 ind=4.6478900241121914e-06
+X980 nt_n_4 nt_c_11 rl_admittance res=115.06944517207013 ind=4.398275115088225e-05
+X981 nt_n_4 nt_c_11 rl_admittance res=426.2700578086323 ind=0.00035785967627221626
+X982 nt_p_4 nt_c_11 rl_admittance res=1767837.8884762889 ind=60.14803889448731
+X983 nt_n_4 nt_c_11 rl_admittance res=1140430.3074551483 ind=379.72714786607685
+X984 nt_n_4 nt_c_11 rl_admittance res=5558152.961941141 ind=21581.51795104658
+* Transfer network from port 5 to port 11
+R11_5 nt_n_5 nt_c_11 4.96007367730599
+X985 nt_p_5 nt_c_11 rl_admittance res=2.1898731533258347 ind=1.895132986353535e-07
+X986 nt_n_5 nt_c_11 rl_admittance res=5.326319307631207 ind=2.035867786686299e-06
+X987 nt_n_5 nt_c_11 rl_admittance res=14.859966874486947 ind=1.2475150055008314e-05
+X988 nt_p_5 nt_c_11 rl_admittance res=48829.57630313059 ind=1.6613532687736752
+X989 nt_n_5 nt_c_11 rl_admittance res=56624.422939033226 ind=18.854138198223204
+X990 nt_p_5 nt_c_11 rl_admittance res=555510.1416418455 ind=2156.966923350907
+* Transfer network from port 6 to port 11
+R11_6 nt_n_6 nt_c_11 3.57705746770787
+X991 nt_p_6 nt_c_11 rl_admittance res=1.587849775866908 ind=1.3741373481150225e-07
+X992 nt_n_6 nt_c_11 rl_admittance res=3.803144443894494 ind=1.4536678734875204e-06
+X993 nt_n_6 nt_c_11 rl_admittance res=11.454469447186364 ind=9.61618732808189e-06
+X994 nt_p_6 nt_c_11 rl_admittance res=29616.029226539045 ind=1.0076410792131496
+X995 nt_n_6 nt_c_11 rl_admittance res=48545.62345244311 ind=16.164154016664227
+X996 nt_p_6 nt_c_11 rl_admittance res=154726.42670303793 ind=600.7807230671655
+* Transfer network from port 7 to port 11
+R11_7 nt_p_7 nt_c_11 87.40759389085231
+X997 nt_n_7 nt_c_11 rl_admittance res=62.3197302326538 ind=5.3931971486653026e-06
+X998 nt_p_7 nt_c_11 rl_admittance res=405.23327177039135 ind=0.0001548914581423658
+X999 nt_p_7 nt_c_11 rl_admittance res=466.8033749929293 ind=0.0003918879630357297
+X1000 nt_n_7 nt_c_11 rl_admittance res=881643.3913436596 ind=29.996597164976638
+X1001 nt_n_7 nt_c_11 rl_admittance res=511870.6379835844 ind=170.4366993469612
+X1002 nt_n_7 nt_c_11 rl_admittance res=692130.0924815562 ind=2687.442774178984
+* Transfer network from port 8 to port 11
+R11_8 nt_p_8 nt_c_11 113.95400055994521
+X1003 nt_n_8 nt_c_11 rl_admittance res=19.30416490569678 ind=1.6705972047391395e-06
+X1004 nt_p_8 nt_c_11 rl_admittance res=27.787193596544896 ind=1.0621040357939147e-05
+X1005 nt_p_8 nt_c_11 rl_admittance res=142.09428522647028 ind=0.00011929014008791791
+X1006 nt_n_8 nt_c_11 rl_admittance res=807658.2370172893 ind=27.47936299489518
+X1007 nt_p_8 nt_c_11 rl_admittance res=507286.833893404 ind=168.9104378628858
+X1008 nt_p_8 nt_c_11 rl_admittance res=3179949.4938050853 ind=12347.291906843835
+* Transfer network from port 9 to port 11
+R11_9 nt_n_9 nt_c_11 5.482782124081807
+X1009 nt_p_9 nt_c_11 rl_admittance res=2.8516337984233457 ind=2.4678257131857746e-07
+X1010 nt_n_9 nt_c_11 rl_admittance res=7.695463188331489 ind=2.9414206516510803e-06
+X1011 nt_n_9 nt_c_11 rl_admittance res=26.06450127469809 ind=2.1881513415018334e-05
+X1012 nt_p_9 nt_c_11 rl_admittance res=54811.17981534532 ind=1.864868377850895
+X1013 nt_p_9 nt_c_11 rl_admittance res=266052.9026107009 ind=88.58718435438095
+X1014 nt_p_9 nt_c_11 rl_admittance res=228627.23253300568 ind=887.7270483189365
+* Transfer network from port 10 to port 11
+R11_10 nt_n_10 nt_c_11 5.5922973556437805
+X1015 nt_p_10 nt_c_11 rl_admittance res=3.5953360585362373 ind=3.111431340765204e-07
+X1016 nt_n_10 nt_c_11 rl_admittance res=66.21009923457837 ind=2.530734648068426e-05
+X1017 nt_n_10 nt_c_11 rl_admittance res=11.868625899900415 ind=9.963877463429928e-06
+X1018 nt_p_10 nt_c_11 rl_admittance res=24008.848806597904 ind=0.8168651555917168
+X1019 nt_n_10 nt_c_11 rl_admittance res=88018.94673941786 ind=29.30751961346815
+X1020 nt_p_10 nt_c_11 rl_admittance res=124587.46667155603 ind=483.75542502316574
+* Transfer network from port 11 to port 11
+R11_11 nt_p_11 nt_c_11 1.0777002994323543
+X1021 nt_n_11 nt_c_11 rl_admittance res=11.75151648604723 ind=1.0169852303345623e-06
+X1022 nt_n_11 nt_c_11 rl_admittance res=0.6212445915149964 ind=2.3745700895295292e-07
+X1023 nt_n_11 nt_c_11 rl_admittance res=4.665322054013087 ind=3.916603123703954e-06
+X1024 nt_n_11 nt_c_11 rl_admittance res=30265.96907167688 ind=1.0297543099223985
+X1025 nt_n_11 nt_c_11 rl_admittance res=69595.41007566781 ind=23.17306581545994
+X1026 nt_n_11 nt_c_11 rl_admittance res=34874.27686114942 ind=135.41186024607194
+* Transfer network from port 12 to port 11
+R11_12 nt_n_12 nt_c_11 13.018281313248819
+X1027 nt_p_12 nt_c_11 rl_admittance res=9.321743758242715 ind=8.067108389246688e-07
+X1028 nt_p_12 nt_c_11 rl_admittance res=44.8800947396423 ind=1.715442388385503e-05
+X1029 nt_n_12 nt_c_11 rl_admittance res=18.949432254719543 ind=1.590831344588732e-05
+X1030 nt_p_12 nt_c_11 rl_admittance res=35280.89618786451 ind=1.200379701087341
+X1031 nt_n_12 nt_c_11 rl_admittance res=158563.31094419476 ind=52.79655707800362
+X1032 nt_p_12 nt_c_11 rl_admittance res=136061.59958770848 ind=528.307852277013
+* Transfer network from port 13 to port 11
+R11_13 nt_n_13 nt_c_11 2.867040469117917
+X1033 nt_p_13 nt_c_11 rl_admittance res=1.7871046031235376 ind=1.546574000553415e-07
+X1034 nt_n_13 nt_c_11 rl_admittance res=11.364489315478627 ind=4.3438247640119765e-06
+X1035 nt_n_13 nt_c_11 rl_admittance res=8.142999717322489 ind=6.836162168429844e-06
+X1036 nt_p_13 nt_c_11 rl_admittance res=22958.667708799647 ind=0.781134315151891
+X1037 nt_n_13 nt_c_11 rl_admittance res=43237.61294955848 ind=14.396754749977488
+X1038 nt_p_13 nt_c_11 rl_admittance res=197454.409030227 ind=766.6874053626062
+* Transfer network from port 14 to port 11
+R11_14 nt_n_14 nt_c_11 4.731581327160873
+X1039 nt_p_14 nt_c_11 rl_admittance res=3.4474379474300574 ind=2.983439183524945e-07
+X1040 nt_p_14 nt_c_11 rl_admittance res=5.115795365553145 ind=1.955399664658979e-06
+X1041 nt_n_14 nt_c_11 rl_admittance res=3.6469710809091027 ind=3.0616832369074662e-06
+X1042 nt_p_14 nt_c_11 rl_admittance res=59122.884091780266 ind=2.011567664143522
+X1043 nt_n_14 nt_c_11 rl_admittance res=68827.9325552892 ind=22.917520125416832
+X1044 nt_p_14 nt_c_11 rl_admittance res=1417463.1584119017 ind=5503.80797500218
+* Transfer network from port 15 to port 11
+R11_15 nt_n_15 nt_c_11 65.43497585665507
+X1045 nt_p_15 nt_c_11 rl_admittance res=18.05250097811454 ind=1.5622772505268425e-06
+X1046 nt_n_15 nt_c_11 rl_admittance res=30.374650564782897 ind=1.1610038573559734e-05
+X1047 nt_n_15 nt_c_11 rl_admittance res=139.10602979357895 ind=0.00011678145785175376
+X1048 nt_p_15 nt_c_11 rl_admittance res=667483.5687616688 ind=22.710129654428734
+X1049 nt_n_15 nt_c_11 rl_admittance res=580913.4576326071 ind=193.4257700640128
+X1050 nt_n_15 nt_c_11 rl_admittance res=7536661.915858853 ind=29263.78700655115
+* Transfer network from port 16 to port 11
+R11_16 nt_p_16 nt_c_11 97.62557480517026
+X1051 nt_n_16 nt_c_11 rl_admittance res=64.72271577226013 ind=5.601153356307843e-06
+X1052 nt_p_16 nt_c_11 rl_admittance res=310.13487519187294 ind=0.00011854219874247677
+X1053 nt_p_16 nt_c_11 rl_admittance res=503.59992708860705 ind=0.00042277918323680835
+X1054 nt_n_16 nt_c_11 rl_admittance res=1638908.884019589 ind=55.761422437605596
+X1055 nt_n_16 nt_c_11 rl_admittance res=715992.0954987485 ind=238.4026753244527
+X1056 nt_n_16 nt_c_11 rl_admittance res=1048718.758377064 ind=4072.02588062807
+
+* Port network for port 12
+R_ref_12 p12 a12 50.0
+H_b_12 a12 0 V_c_12 14.142135623730951
+* Differential incident wave a sources for transfer from port 12
+H_p_12 nt_p_12 nts_p_12 H_b_12 3.5355339059327378
+E_p_12 nts_p_12 0 p12 0 0.07071067811865475
+E_n_12 0 nt_n_12 nt_p_12 0 1
+* Current sensor on center node for transfer to port 12
+V_c_12 nt_c_12 0 0
+* Transfer network from port 1 to port 12
+R12_1 nt_n_1 nt_c_12 35.35354671656148
+X1057 nt_p_1 nt_c_12 rl_admittance res=34.93976576907963 ind=3.0237140696430366e-06
+X1058 nt_p_1 nt_c_12 rl_admittance res=109.50460958682442 ind=4.1855715790839996e-05
+X1059 nt_n_1 nt_c_12 rl_admittance res=105.49644287288267 ind=8.85657394949114e-05
+X1060 nt_p_1 nt_c_12 rl_admittance res=129782.9026236517 ind=4.415669064302647
+X1061 nt_p_1 nt_c_12 rl_admittance res=732129.7461226729 ind=243.77600151950654
+X1062 nt_p_1 nt_c_12 rl_admittance res=348196.16913919663 ind=1351.996234399927
+* Transfer network from port 2 to port 12
+R12_2 nt_n_2 nt_c_12 28.37738705578437
+X1063 nt_p_2 nt_c_12 rl_admittance res=9.597715813210097 ind=8.305936717675736e-07
+X1064 nt_n_2 nt_c_12 rl_admittance res=20.70372285903138 ind=7.913540289030904e-06
+X1065 nt_n_2 nt_c_12 rl_admittance res=48.365964695074396 ind=4.060390391328645e-05
+X1066 nt_p_2 nt_c_12 rl_admittance res=48426.895645653385 ind=1.6476526619443508
+X1067 nt_n_2 nt_c_12 rl_admittance res=316475.801360944 ind=105.37641154731294
+X1068 nt_p_2 nt_c_12 rl_admittance res=152695.02769036326 ind=592.8930894309609
+* Transfer network from port 3 to port 12
+R12_3 nt_n_3 nt_c_12 14.311999439143037
+X1069 nt_p_3 nt_c_12 rl_admittance res=6.934174265611252 ind=6.000887477854926e-07
+X1070 nt_n_3 nt_c_12 rl_admittance res=22.81568677941013 ind=8.720791800592086e-06
+X1071 nt_n_3 nt_c_12 rl_admittance res=32.75083377030684 ind=2.7494783074697657e-05
+X1072 nt_p_3 nt_c_12 rl_admittance res=48791.00695656153 ind=1.6600410044689597
+X1073 nt_n_3 nt_c_12 rl_admittance res=203783.82078156868 ind=67.85355364617945
+X1074 nt_p_3 nt_c_12 rl_admittance res=179519.4666479155 ind=697.0485732496335
+* Transfer network from port 4 to port 12
+R12_4 nt_p_4 nt_c_12 1824.460846866298
+X1075 nt_p_4 nt_c_12 rl_admittance res=304.0201672090251 ind=2.6310137941985773e-05
+X1076 nt_n_4 nt_c_12 rl_admittance res=339.7473397367887 ind=0.00012986090856240978
+X1077 nt_n_4 nt_c_12 rl_admittance res=1117.0562586584122 ind=0.0009377843547266323
+X1078 nt_p_4 nt_c_12 rl_admittance res=1007248.572464266 ind=34.2701255063694
+X1079 nt_n_4 nt_c_12 rl_admittance res=6419434.519613986 ind=2137.4682390593402
+X1080 nt_p_4 nt_c_12 rl_admittance res=2770148.9668895723 ind=10756.094707246299
+* Transfer network from port 5 to port 12
+R12_5 nt_n_5 nt_c_12 21.676562437070476
+X1081 nt_p_5 nt_c_12 rl_admittance res=8.343996998078959 ind=7.220958860141552e-07
+X1082 nt_n_5 nt_c_12 rl_admittance res=19.633744714547685 ind=7.504564801269259e-06
+X1083 nt_n_5 nt_c_12 rl_admittance res=43.86806103569755 ind=3.6827850873758094e-05
+X1084 nt_p_5 nt_c_12 rl_admittance res=71919.09893039278 ind=2.4469397267247026
+X1085 nt_n_5 nt_c_12 rl_admittance res=308520.57253935584 ind=102.72757248078149
+X1086 nt_p_5 nt_c_12 rl_admittance res=270831.58973279933 ind=1051.6005686694139
+* Transfer network from port 6 to port 12
+R12_6 nt_n_6 nt_c_12 14.317632600545553
+X1087 nt_p_6 nt_c_12 rl_admittance res=6.600294640126104 ind=5.711945494723485e-07
+X1088 nt_n_6 nt_c_12 rl_admittance res=19.7631802695427 ind=7.554038680255199e-06
+X1089 nt_n_6 nt_c_12 rl_admittance res=32.17360073095432 ind=2.7010187863722134e-05
+X1090 nt_p_6 nt_c_12 rl_admittance res=60636.06253695034 ind=2.063051296532935
+X1091 nt_n_6 nt_c_12 rl_admittance res=230522.54088358066 ind=76.75669998975877
+X1092 nt_p_6 nt_c_12 rl_admittance res=261148.54612441323 ind=1014.0026866236906
+* Transfer network from port 7 to port 12
+R12_7 nt_p_7 nt_c_12 189.1113639157011
+X1093 nt_p_7 nt_c_12 rl_admittance res=372.66846872712733 ind=3.2251014493055194e-05
+X1094 nt_n_7 nt_c_12 rl_admittance res=122.84492814499737 ind=4.695475759590149e-05
+X1095 nt_p_7 nt_c_12 rl_admittance res=5965.85253174117 ind=0.0050084166518097935
+X1096 nt_p_7 nt_c_12 rl_admittance res=908961.1301447625 ind=30.9260423514549
+X1097 nt_n_7 nt_c_12 rl_admittance res=2434012.426741652 ind=810.4489951162982
+X1098 nt_p_7 nt_c_12 rl_admittance res=1831322.242032031 ind=7110.763973426552
+* Transfer network from port 8 to port 12
+R12_8 nt_p_8 nt_c_12 226.78593813665788
+X1099 nt_n_8 nt_c_12 rl_admittance res=131.92830379622265 ind=1.1417176377461653e-05
+X1100 nt_p_8 nt_c_12 rl_admittance res=1022.0872951887419 ind=0.00039067026951891595
+X1101 nt_p_8 nt_c_12 rl_admittance res=455.7901315460419 ind=0.0003826421911068471
+X1102 nt_n_8 nt_c_12 rl_admittance res=501323.66662439884 ind=17.05678761350734
+X1103 nt_p_8 nt_c_12 rl_admittance res=2738264.9193003546 ind=911.7554322349948
+X1104 nt_n_8 nt_c_12 rl_admittance res=1676762.5058262937 ind=6510.630485868088
+* Transfer network from port 9 to port 12
+R12_9 nt_n_9 nt_c_12 69.55375805621117
+X1105 nt_p_9 nt_c_12 rl_admittance res=114.26262496103557 ind=9.888375011225208e-06
+X1106 nt_p_9 nt_c_12 rl_admittance res=58.76165329779464 ind=2.2460342711712624e-05
+X1107 nt_n_9 nt_c_12 rl_admittance res=87.73605427432312 ind=7.365564483092589e-05
+X1108 nt_p_9 nt_c_12 rl_admittance res=140888.64930458998 ind=4.793525477309579
+X1109 nt_n_9 nt_c_12 rl_admittance res=358128.8209441745 ind=119.24554692801398
+X1110 nt_p_9 nt_c_12 rl_admittance res=751006.7433679473 ind=2916.052441221754
+* Transfer network from port 10 to port 12
+R12_10 nt_n_10 nt_c_12 2.653931639419273
+X1111 nt_p_10 nt_c_12 rl_admittance res=1.5211974785183904 ind=1.3164559398884404e-07
+X1112 nt_n_10 nt_c_12 rl_admittance res=5.2301318099791425 ind=1.9991022424818355e-06
+X1113 nt_n_10 nt_c_12 rl_admittance res=11.18465498744883 ind=9.389674314919272e-06
+X1114 nt_p_10 nt_c_12 rl_admittance res=24234.997043567993 ind=0.8245595109632496
+X1115 nt_n_10 nt_c_12 rl_admittance res=55094.030458378205 ind=18.344566006046367
+X1116 nt_p_10 nt_c_12 rl_admittance res=168529.17685767557 ind=654.3748400833495
+* Transfer network from port 11 to port 12
+R12_11 nt_n_11 nt_c_12 12.964580067802316
+X1117 nt_p_11 nt_c_12 rl_admittance res=9.275713126742863 ind=8.027273128466598e-07
+X1118 nt_p_11 nt_c_12 rl_admittance res=45.1250252783456 ind=1.7248043166688365e-05
+X1119 nt_n_11 nt_c_12 rl_admittance res=18.91594644458903 ind=1.5880201639877244e-05
+X1120 nt_p_11 nt_c_12 rl_admittance res=35176.78305938261 ind=1.1968374076778736
+X1121 nt_n_11 nt_c_12 rl_admittance res=159512.43696118242 ind=53.112585960294965
+X1122 nt_p_11 nt_c_12 rl_admittance res=136208.88474211274 ind=528.8797395973986
+* Transfer network from port 12 to port 12
+R12_12 nt_p_12 nt_c_12 1.1049319554875447
+X1123 nt_p_12 nt_c_12 rl_admittance res=11.857227341392154 ind=1.026133528658397e-06
+X1124 nt_n_12 nt_c_12 rl_admittance res=0.5359738801809215 ind=2.0486416494073857e-07
+X1125 nt_n_12 nt_c_12 rl_admittance res=9.541038074116358 ind=8.009834924969076e-06
+X1126 nt_n_12 nt_c_12 rl_admittance res=45364.87322641019 ind=1.5434719309118392
+X1127 nt_n_12 nt_c_12 rl_admittance res=86990.04198522324 ind=28.96492694017449
+X1128 nt_n_12 nt_c_12 rl_admittance res=29328.26387062983 ind=113.87748007855767
+* Transfer network from port 13 to port 12
+R12_13 nt_n_13 nt_c_12 10.93919247040132
+X1129 nt_p_13 nt_c_12 rl_admittance res=6.859735491053976 ind=5.936467592660673e-07
+X1130 nt_n_13 nt_c_12 rl_admittance res=60.657187254978 ind=2.3184868655260657e-05
+X1131 nt_n_13 nt_c_12 rl_admittance res=26.38543989988332 ind=2.2150945880208268e-05
+X1132 nt_p_13 nt_c_12 rl_admittance res=45538.43683777649 ind=1.5493771730809194
+X1133 nt_n_13 nt_c_12 rl_admittance res=188883.94883025193 ind=62.89236851925246
+X1134 nt_p_13 nt_c_12 rl_admittance res=190210.0619665263 ind=738.5586353792291
+* Transfer network from port 14 to port 12
+R12_14 nt_n_14 nt_c_12 17.779114788716022
+X1135 nt_p_14 nt_c_12 rl_admittance res=14.100132373135203 ind=1.2202362466381595e-06
+X1136 nt_p_14 nt_c_12 rl_admittance res=22.415337786324425 ind=8.567767249982114e-06
+X1137 nt_n_14 nt_c_12 rl_admittance res=16.85989678414486 ind=1.4154119189543687e-05
+X1138 nt_p_14 nt_c_12 rl_admittance res=41253.76840279169 ind=1.4035977408392144
+X1139 nt_n_14 nt_c_12 rl_admittance res=181486.3603950796 ind=60.42920602768079
+X1140 nt_p_14 nt_c_12 rl_admittance res=174285.28266457637 ind=676.7249807956282
+* Transfer network from port 15 to port 12
+R12_15 nt_n_15 nt_c_12 200.9763949957991
+X1141 nt_p_15 nt_c_12 rl_admittance res=113.84823316561338 ind=9.852513228108402e-06
+X1142 nt_n_15 nt_c_12 rl_admittance res=636.9246322463615 ind=0.0002434503578258188
+X1143 nt_n_15 nt_c_12 rl_admittance res=446.4985593428459 ind=0.0003748417862700889
+X1144 nt_p_15 nt_c_12 rl_admittance res=512727.00191641744 ind=17.44476903371685
+X1145 nt_n_15 nt_c_12 rl_admittance res=3038500.4497597194 ind=1011.7243482872166
+X1146 nt_p_15 nt_c_12 rl_admittance res=1653877.7781838232 ind=6421.77234112061
+* Transfer network from port 16 to port 12
+R12_16 nt_p_16 nt_c_12 496.8483641027143
+X1147 nt_p_16 nt_c_12 rl_admittance res=134.57029541452553 ind=1.164581635406994e-05
+X1148 nt_n_16 nt_c_12 rl_admittance res=106.89587137900138 ind=4.085858329193116e-05
+X1149 nt_n_16 nt_c_12 rl_admittance res=11141.882850377642 ind=0.0093537665075437
+X1150 nt_p_16 nt_c_12 rl_admittance res=1245222.161664841 ind=42.366820792968305
+X1151 nt_n_16 nt_c_12 rl_admittance res=2814891.7385053257 ind=937.2697344387685
+X1152 nt_p_16 nt_c_12 rl_admittance res=2270407.73904265 ind=8815.670549525787
+
+* Port network for port 13
+R_ref_13 p13 a13 50.0
+H_b_13 a13 0 V_c_13 14.142135623730951
+* Differential incident wave a sources for transfer from port 13
+H_p_13 nt_p_13 nts_p_13 H_b_13 3.5355339059327378
+E_p_13 nts_p_13 0 p13 0 0.07071067811865475
+E_n_13 0 nt_n_13 nt_p_13 0 1
+* Current sensor on center node for transfer to port 13
+V_c_13 nt_c_13 0 0
+* Transfer network from port 1 to port 13
+R13_1 nt_n_1 nt_c_13 10.377940712445525
+X1153 nt_p_1 nt_c_13 rl_admittance res=6.179925860917331 ind=5.348155136043667e-07
+X1154 nt_n_1 nt_c_13 rl_admittance res=21.268365103931377 ind=8.129362302507856e-06
+X1155 nt_n_1 nt_c_13 rl_admittance res=54.23798962424615 ind=4.5533550980261916e-05
+X1156 nt_p_1 nt_c_13 rl_admittance res=137872.78156339083 ind=4.6909150901350944
+X1157 nt_n_1 nt_c_13 rl_admittance res=239150.9793108722 ind=79.6296965184505
+X1158 nt_n_1 nt_c_13 rl_admittance res=308989.31451977685 ind=1199.7615905232726
+* Transfer network from port 2 to port 13
+R13_2 nt_n_2 nt_c_13 7.613859287318477
+X1159 nt_p_2 nt_c_13 rl_admittance res=3.1939923286525227 ind=2.764105405373174e-07
+X1160 nt_n_2 nt_c_13 rl_admittance res=6.801438815278804 ind=2.599699602557641e-06
+X1161 nt_n_2 nt_c_13 rl_admittance res=28.807292843193093 ind=2.4184125303429295e-05
+X1162 nt_p_2 nt_c_13 rl_admittance res=161384.15888037952 ind=5.490854522672134
+X1163 nt_n_2 nt_c_13 rl_admittance res=92268.48877744905 ind=30.72248242819678
+X1164 nt_n_2 nt_c_13 rl_admittance res=463730.73131296324 ind=1800.6005179798894
+* Transfer network from port 3 to port 13
+R13_3 nt_n_3 nt_c_13 5.29275919981567
+X1165 nt_p_3 nt_c_13 rl_admittance res=2.184248848748598 ind=1.890265670128651e-07
+X1166 nt_n_3 nt_c_13 rl_admittance res=4.643639978532694 ind=1.7749287076571843e-06
+X1167 nt_n_3 nt_c_13 rl_admittance res=18.677917215809085 ind=1.5680372772721022e-05
+X1168 nt_p_3 nt_c_13 rl_admittance res=61757.374082487986 ind=2.1012022440227907
+X1169 nt_n_3 nt_c_13 rl_admittance res=60066.53539635625 ind=20.00025255304972
+X1170 nt_p_3 nt_c_13 rl_admittance res=452975.8547106152 ind=1758.8408607620709
+* Transfer network from port 4 to port 13
+R13_4 nt_n_4 nt_c_13 237.93094187925277
+X1171 nt_p_4 nt_c_13 rl_admittance res=82.26703635043074 ind=7.119452286104582e-06
+X1172 nt_n_4 nt_c_13 rl_admittance res=153.463987859266 ind=5.865821616279443e-05
+X1173 nt_n_4 nt_c_13 rl_admittance res=696.4385404132357 ind=0.0005846698965838748
+X1174 nt_p_4 nt_c_13 rl_admittance res=5817039.921776057 ind=197.91607915324104
+X1175 nt_n_4 nt_c_13 rl_admittance res=1794968.507494373 ind=597.6676237070922
+X1176 nt_n_4 nt_c_13 rl_admittance res=5979698.873482778 ind=23218.320809733807
+* Transfer network from port 5 to port 13
+R13_5 nt_n_5 nt_c_13 47.76866151436112
+X1177 nt_p_5 nt_c_13 rl_admittance res=3.447441359776626 ind=2.983442136595781e-07
+X1178 nt_n_5 nt_c_13 rl_admittance res=4.328257613634327 ind=1.6543807720000783e-06
+X1179 nt_n_5 nt_c_13 rl_admittance res=26.256403226447823 ind=2.2042617787871082e-05
+X1180 nt_p_5 nt_c_13 rl_admittance res=259152.56697063724 ind=8.817278314580701
+X1181 nt_n_5 nt_c_13 rl_admittance res=68623.87534942661 ind=22.849575543203276
+X1182 nt_p_5 nt_c_13 rl_admittance res=957635.8681165396 ind=3718.363963683595
+* Transfer network from port 6 to port 13
+R13_6 nt_n_6 nt_c_13 5.9281382112101575
+X1183 nt_p_6 nt_c_13 rl_admittance res=2.176533397580267 ind=1.8835886596399397e-07
+X1184 nt_n_6 nt_c_13 rl_admittance res=4.212337785535087 ind=1.6100729807778482e-06
+X1185 nt_n_6 nt_c_13 rl_admittance res=18.738316798433207 ind=1.5731079067214146e-05
+X1186 nt_p_6 nt_c_13 rl_admittance res=60299.9306261369 ind=2.051614911230258
+X1187 nt_n_6 nt_c_13 rl_admittance res=66028.76924226045 ind=21.98548745816893
+X1188 nt_p_6 nt_c_13 rl_admittance res=257199.77199790184 ind=998.6701579438445
+* Transfer network from port 7 to port 13
+R13_7 nt_p_7 nt_c_13 388.02683884554364
+X1189 nt_n_7 nt_c_13 rl_admittance res=137.14261098189456 ind=1.1868426511906167e-05
+X1190 nt_p_7 nt_c_13 rl_admittance res=294.4256322750752 ind=0.00011253768797991007
+X1191 nt_p_7 nt_c_13 rl_admittance res=758.8273362475081 ind=0.00063704616339239
+X1192 nt_p_7 nt_c_13 rl_admittance res=3615199.825011881 ind=123.00176453033117
+X1193 nt_n_7 nt_c_13 rl_admittance res=1571290.9387842389 ind=523.1900825082338
+X1194 nt_n_7 nt_c_13 rl_admittance res=1710959.5762242302 ind=6643.412849671282
+* Transfer network from port 8 to port 13
+R13_8 nt_p_8 nt_c_13 59.31682723941415
+X1195 nt_n_8 nt_c_13 rl_admittance res=28.99572313505543 ind=2.509312071019379e-06
+X1196 nt_p_8 nt_c_13 rl_admittance res=75.22722575045081 ind=2.8753943716384695e-05
+X1197 nt_p_8 nt_c_13 rl_admittance res=230.59091397336428 ind=0.0001935842978276189
+X1198 nt_n_8 nt_c_13 rl_admittance res=720037.3899053198 ind=24.498194781218583
+X1199 nt_p_8 nt_c_13 rl_admittance res=865459.0570271405 ind=288.1704363444457
+X1200 nt_n_8 nt_c_13 rl_admittance res=63235457.873668864 ind=245534.29504153438
+* Transfer network from port 9 to port 13
+R13_9 nt_n_9 nt_c_13 10.003120403560601
+X1201 nt_p_9 nt_c_13 rl_admittance res=6.540303011979532 ind=5.660028280599482e-07
+X1202 nt_n_9 nt_c_13 rl_admittance res=34.226069995755324 ind=1.308215849346397e-05
+X1203 nt_n_9 nt_c_13 rl_admittance res=42.13863400290945 ind=3.537597268819758e-05
+X1204 nt_p_9 nt_c_13 rl_admittance res=71623.54526416918 ind=2.436883955475933
+X1205 nt_p_9 nt_c_13 rl_admittance res=697161.2958060226 ind=232.13261584548937
+X1206 nt_p_9 nt_c_13 rl_admittance res=245034.77872688242 ind=951.4352181265032
+* Transfer network from port 10 to port 13
+R13_10 nt_n_10 nt_c_13 8.019632620881717
+X1207 nt_p_10 nt_c_13 rl_admittance res=5.247581623704565 ind=4.5412972977734164e-07
+X1208 nt_n_10 nt_c_13 rl_admittance res=86.20575994397178 ind=3.295024566876681e-05
+X1209 nt_n_10 nt_c_13 rl_admittance res=18.416875801520614 ind=1.5461224853931823e-05
+X1210 nt_p_10 nt_c_13 rl_admittance res=33641.29551290687 ind=1.1445947414982127
+X1211 nt_n_10 nt_c_13 rl_admittance res=131126.25049738996 ind=43.66088553263471
+X1212 nt_p_10 nt_c_13 rl_admittance res=160381.59428402633 ind=622.7389349949376
+* Transfer network from port 11 to port 13
+R13_11 nt_n_11 nt_c_13 2.867092304547139
+X1213 nt_p_11 nt_c_13 rl_admittance res=1.7871042524356595 ind=1.5465736970654416e-07
+X1214 nt_n_11 nt_c_13 rl_admittance res=11.366352974780858 ind=4.34453710657344e-06
+X1215 nt_n_11 nt_c_13 rl_admittance res=8.141631505090377 ind=6.835013535122188e-06
+X1216 nt_p_11 nt_c_13 rl_admittance res=22976.492938263942 ind=0.7817407919120681
+X1217 nt_n_11 nt_c_13 rl_admittance res=43238.12758275735 ind=14.396926106522052
+X1218 nt_p_11 nt_c_13 rl_admittance res=197539.25189713706 ind=767.0168381557978
+* Transfer network from port 12 to port 13
+R13_12 nt_n_12 nt_c_13 10.938493080052574
+X1219 nt_p_12 nt_c_13 rl_admittance res=6.858703646090803 ind=5.935574626132661e-07
+X1220 nt_n_12 nt_c_13 rl_admittance res=60.49349351447591 ind=2.312230034233715e-05
+X1221 nt_n_12 nt_c_13 rl_admittance res=26.40533185098685 ind=2.2167645451411854e-05
+X1222 nt_p_12 nt_c_13 rl_admittance res=45548.5196959611 ind=1.5497202272434127
+X1223 nt_n_12 nt_c_13 rl_admittance res=187938.60664588457 ind=62.577599533299825
+X1224 nt_p_12 nt_c_13 rl_admittance res=190011.28328369174 ind=737.7868060069081
+* Transfer network from port 13 to port 13
+R13_13 nt_p_13 nt_c_13 0.7174008018901565
+X1225 nt_n_13 nt_c_13 rl_admittance res=1.019699409135313 ind=8.82455672595757e-08
+X1226 nt_n_13 nt_c_13 rl_admittance res=0.7497218530853497 ind=2.8656460146585415e-07
+X1227 nt_n_13 nt_c_13 rl_admittance res=15.710404799275674 ind=1.3189104588946367e-05
+X1228 nt_n_13 nt_c_13 rl_admittance res=15951.031661551566 ind=0.5427099843488112
+X1229 nt_p_13 nt_c_13 rl_admittance res=1170878.0587523116 ind=389.8652840445229
+X1230 nt_n_13 nt_c_13 rl_admittance res=51458.474000348535 ind=199.80594056629454
+* Transfer network from port 14 to port 13
+R13_14 nt_n_14 nt_c_13 4.043995749501471
+X1231 nt_p_14 nt_c_13 rl_admittance res=2.6749174824607365 ind=2.314894060912222e-07
+X1232 nt_p_14 nt_c_13 rl_admittance res=26.32661455804527 ind=1.0062766314899646e-05
+X1233 nt_n_14 nt_c_13 rl_admittance res=6.076546434212671 ind=5.10134573134074e-06
+X1234 nt_p_14 nt_c_13 rl_admittance res=30877.6303954122 ind=1.0505651712180546
+X1235 nt_n_14 nt_c_13 rl_admittance res=56180.80290085653 ind=18.706426785494283
+X1236 nt_p_14 nt_c_13 rl_admittance res=220509.77677443443 ind=856.2081213714403
+* Transfer network from port 15 to port 13
+R13_15 nt_n_15 nt_c_13 98.86700132976924
+X1237 nt_p_15 nt_c_13 rl_admittance res=29.954992749184704 ind=2.592327997571199e-06
+X1238 nt_n_15 nt_c_13 rl_admittance res=52.61746183153878 ind=2.0111861376119132e-05
+X1239 nt_n_15 nt_c_13 rl_admittance res=234.52358193783544 ind=0.0001968858275946559
+X1240 nt_p_15 nt_c_13 rl_admittance res=1154164.879718888 ind=39.26873302609051
+X1241 nt_n_15 nt_c_13 rl_admittance res=1106166.9621659827 ind=368.3185398187875
+X1242 nt_n_15 nt_c_13 rl_admittance res=9308967.443030875 ind=36145.39746443317
+* Transfer network from port 16 to port 13
+R13_16 nt_p_16 nt_c_13 269.63874877275094
+X1243 nt_n_16 nt_c_13 rl_admittance res=142.85060713043745 ind=1.2362400867025949e-05
+X1244 nt_p_16 nt_c_13 rl_admittance res=482.52512928306186 ind=0.00018443456169940262
+X1245 nt_p_16 nt_c_13 rl_admittance res=821.1388599790577 ind=0.0006893575591897733
+X1246 nt_n_16 nt_c_13 rl_admittance res=10699210.214102795 ind=364.02461803373785
+X1247 nt_n_16 nt_c_13 rl_admittance res=2577578.974371969 ind=858.2521053144927
+X1248 nt_n_16 nt_c_13 rl_admittance res=1959875.663923928 ind=7609.918638874894
+
+* Port network for port 14
+R_ref_14 p14 a14 50.0
+H_b_14 a14 0 V_c_14 14.142135623730951
+* Differential incident wave a sources for transfer from port 14
+H_p_14 nt_p_14 nts_p_14 H_b_14 3.5355339059327378
+E_p_14 nts_p_14 0 p14 0 0.07071067811865475
+E_n_14 0 nt_n_14 nt_p_14 0 1
+* Current sensor on center node for transfer to port 14
+V_c_14 nt_c_14 0 0
+* Transfer network from port 1 to port 14
+R14_1 nt_n_1 nt_c_14 9.875378762946793
+X1249 nt_p_1 nt_c_14 rl_admittance res=6.225302650866214 ind=5.38742455734159e-07
+X1250 nt_n_1 nt_c_14 rl_admittance res=45.795367338530326 ind=1.750426659746085e-05
+X1251 nt_n_1 nt_c_14 rl_admittance res=26.636185037919578 ind=2.236144993105758e-05
+X1252 nt_p_1 nt_c_14 rl_admittance res=79113.31565273239 ind=2.691712185812349
+X1253 nt_n_1 nt_c_14 rl_admittance res=192159.95134118863 ind=63.98317352657994
+X1254 nt_n_1 nt_c_14 rl_admittance res=1111332.9304980368 ind=4315.147811397453
+* Transfer network from port 2 to port 14
+R14_2 nt_n_2 nt_c_14 4.985159281065527
+X1255 nt_p_2 nt_c_14 rl_admittance res=2.9525360546569694 ind=2.555147297952189e-07
+X1256 nt_n_2 nt_c_14 rl_admittance res=15.334863334256172 ind=5.861412444935349e-06
+X1257 nt_n_2 nt_c_14 rl_admittance res=13.718069419143376 ind=1.1516511168181386e-05
+X1258 nt_p_2 nt_c_14 rl_admittance res=42933.109127838645 ind=1.4607347961685813
+X1259 nt_n_2 nt_c_14 rl_admittance res=71734.56677556153 ind=23.88533719862046
+X1260 nt_p_2 nt_c_14 rl_admittance res=515714.7134054126 ind=2002.4469317754658
+* Transfer network from port 3 to port 14
+R14_3 nt_n_3 nt_c_14 3.6115228002890976
+X1261 nt_p_3 nt_c_14 rl_admittance res=1.7621136273569 ind=1.5249466188648513e-07
+X1262 nt_n_3 nt_c_14 rl_admittance res=5.799162807646902 ind=2.216601759665864e-06
+X1263 nt_n_3 nt_c_14 rl_admittance res=8.46044341335553 ind=7.102660591708824e-06
+X1264 nt_p_3 nt_c_14 rl_admittance res=24686.979752408322 ind=0.8399375463182874
+X1265 nt_n_3 nt_c_14 rl_admittance res=48525.82767081311 ind=16.157562648784047
+X1266 nt_p_3 nt_c_14 rl_admittance res=136003.69592850315 ind=528.083020598373
+* Transfer network from port 4 to port 14
+R14_4 nt_n_4 nt_c_14 122.90487253269856
+X1267 nt_p_4 nt_c_14 rl_admittance res=68.03505400284435 ind=5.887805641770426e-06
+X1268 nt_n_4 nt_c_14 rl_admittance res=278.4113682182854 ind=0.00010641658963081274
+X1269 nt_n_4 nt_c_14 rl_admittance res=336.64760204880184 ind=0.00028262037100688534
+X1270 nt_p_4 nt_c_14 rl_admittance res=991016.7584311331 ind=33.717862321969356
+X1271 nt_n_4 nt_c_14 rl_admittance res=1444037.333495932 ind=480.81866509156293
+X1272 nt_p_4 nt_c_14 rl_admittance res=22913800.530584563 ind=88971.03063979118
+* Transfer network from port 5 to port 14
+R14_5 nt_n_5 nt_c_14 5.37344189066513
+X1273 nt_p_5 nt_c_14 rl_admittance res=2.4624387920652997 ind=2.1310133761090703e-07
+X1274 nt_n_5 nt_c_14 rl_admittance res=8.049690134803901 ind=3.076816069733921e-06
+X1275 nt_n_5 nt_c_14 rl_admittance res=10.440382255219184 ind=8.764846945192282e-06
+X1276 nt_p_5 nt_c_14 rl_admittance res=45850.72830046506 ind=1.5600024228092177
+X1277 nt_n_5 nt_c_14 rl_admittance res=64341.59971776403 ind=21.423713479245816
+X1278 nt_p_5 nt_c_14 rl_admittance res=290824.87988990336 ind=1129.231672631571
+* Transfer network from port 6 to port 14
+R14_6 nt_n_6 nt_c_14 3.8030508043104
+X1279 nt_p_6 nt_c_14 rl_admittance res=1.5467276748660348 ind=1.338549967194553e-07
+X1280 nt_n_6 nt_c_14 rl_admittance res=3.7589666005775144 ind=1.4367818696827064e-06
+X1281 nt_n_6 nt_c_14 rl_admittance res=8.504482108612756 ind=7.139631692398417e-06
+X1282 nt_p_6 nt_c_14 rl_admittance res=21358.798918318153 ind=0.7267011734802314
+X1283 nt_n_6 nt_c_14 rl_admittance res=47226.12408076332 ind=15.724802545782037
+X1284 nt_p_6 nt_c_14 rl_admittance res=89520.03550516549 ind=347.59357406355514
+* Transfer network from port 7 to port 14
+R14_7 nt_p_7 nt_c_14 203.4570417806069
+X1285 nt_n_7 nt_c_14 rl_admittance res=45.185136914406755 ind=3.9103563295134715e-06
+X1286 nt_p_7 nt_c_14 rl_admittance res=74.11950134831403 ind=2.8330540556231394e-05
+X1287 nt_p_7 nt_c_14 rl_admittance res=268.4521047639444 ind=0.00022536929710542474
+X1288 nt_p_7 nt_c_14 rl_admittance res=30747539.641321417 ind=1046.139027968229
+X1289 nt_n_7 nt_c_14 rl_admittance res=2721236.688222679 ind=906.0855709746786
+X1290 nt_n_7 nt_c_14 rl_admittance res=4057542.5308945826 ind=15754.86093442344
+* Transfer network from port 8 to port 14
+R14_8 nt_p_8 nt_c_14 51.016920071364794
+X1291 nt_n_8 nt_c_14 rl_admittance res=33.90602013170507 ind=2.934252931041823e-06
+X1292 nt_n_8 nt_c_14 rl_admittance res=8140.394034010803 ind=0.003111485629678929
+X1293 nt_p_8 nt_c_14 rl_admittance res=99.84626118095022 ind=8.382233292878125e-05
+X1294 nt_n_8 nt_c_14 rl_admittance res=614307.7697261204 ind=20.900902660548464
+X1295 nt_p_8 nt_c_14 rl_admittance res=834615.0634945311 ind=277.9003640599995
+X1296 nt_n_8 nt_c_14 rl_admittance res=6076495.596336865 ind=23594.16872651161
+* Transfer network from port 9 to port 14
+R14_9 nt_n_9 nt_c_14 10.381649043363435
+X1297 nt_p_9 nt_c_14 rl_admittance res=7.16290998485701 ind=6.198837119842906e-07
+X1298 nt_p_9 nt_c_14 rl_admittance res=470.21474821346794 ind=0.0001797291907267102
+X1299 nt_n_9 nt_c_14 rl_admittance res=22.010893953807336 ind=1.8478453366545757e-05
+X1300 nt_p_9 nt_c_14 rl_admittance res=57093.43888568724 ind=1.9425188277168262
+X1301 nt_p_9 nt_c_14 rl_admittance res=273629574.5581234 ind=91109.9759797033
+X1302 nt_p_9 nt_c_14 rl_admittance res=258501.51288211078 ind=1003.7246327761375
+* Transfer network from port 10 to port 14
+R14_10 nt_n_10 nt_c_14 18.008296915711938
+X1303 nt_p_10 nt_c_14 rl_admittance res=18.47197075442856 ind=1.5985784859962908e-06
+X1304 nt_p_10 nt_c_14 rl_admittance res=11.364670038844682 ind=4.343893841522731e-06
+X1305 nt_n_10 nt_c_14 rl_admittance res=11.543852507908683 ind=9.69122565786453e-06
+X1306 nt_p_10 nt_c_14 rl_admittance res=34455.08101999152 ind=1.1722825756887592
+X1307 nt_n_10 nt_c_14 rl_admittance res=139671.2485211699 ind=46.506099051496605
+X1308 nt_p_10 nt_c_14 rl_admittance res=161905.1527470441 ind=628.654695958019
+* Transfer network from port 11 to port 14
+R14_11 nt_n_11 nt_c_14 4.729159811671065
+X1309 nt_p_11 nt_c_14 rl_admittance res=3.445406221586856 ind=2.981680912431101e-07
+X1310 nt_p_11 nt_c_14 rl_admittance res=5.11782350966146 ind=1.956174877900693e-06
+X1311 nt_n_11 nt_c_14 rl_admittance res=3.6471669494533128 ind=3.061847671290175e-06
+X1312 nt_p_11 nt_c_14 rl_admittance res=59109.65534380339 ind=2.0111175757881217
+X1313 nt_n_11 nt_c_14 rl_admittance res=68739.2791925295 ind=22.888001365375636
+X1314 nt_p_11 nt_c_14 rl_admittance res=1403283.822693766 ind=5448.751629768387
+* Transfer network from port 12 to port 14
+R14_12 nt_n_12 nt_c_14 17.767533756149792
+X1315 nt_p_12 nt_c_14 rl_admittance res=14.084428594006422 ind=1.21887722957399e-06
+X1316 nt_p_12 nt_c_14 rl_admittance res=22.456050013394606 ind=8.583328598603796e-06
+X1317 nt_n_12 nt_c_14 rl_admittance res=16.870847795419017 ind=1.4163312716693049e-05
+X1318 nt_p_12 nt_c_14 rl_admittance res=41280.223662360055 ind=1.4044978414603484
+X1319 nt_n_12 nt_c_14 rl_admittance res=180651.68976632875 ind=60.15128716215151
+X1320 nt_p_12 nt_c_14 rl_admittance res=174043.83986993993 ind=675.7874927411832
+* Transfer network from port 13 to port 14
+R14_13 nt_n_13 nt_c_14 4.042655653790086
+X1321 nt_p_13 nt_c_14 rl_admittance res=2.674059685738469 ind=2.31415171706391e-07
+X1322 nt_p_13 nt_c_14 rl_admittance res=26.38250098780304 ind=1.0084127666986394e-05
+X1323 nt_n_13 nt_c_14 rl_admittance res=6.078116448888384 ind=5.102663780622647e-06
+X1324 nt_p_13 nt_c_14 rl_admittance res=30852.18115243777 ind=1.0496992988062008
+X1325 nt_n_13 nt_c_14 rl_admittance res=56152.08337032828 ind=18.69686409205808
+X1326 nt_p_13 nt_c_14 rl_admittance res=220424.9492195059 ind=855.8787480324968
+* Transfer network from port 14 to port 14
+R14_14 nt_p_14 nt_c_14 1.4029467003750702
+X1327 nt_p_14 nt_c_14 rl_admittance res=2.1587967755885606 ind=1.8682392512269839e-07
+X1328 nt_n_14 nt_c_14 rl_admittance res=0.6363360473619117 ind=2.432253842677625e-07
+X1329 nt_n_14 nt_c_14 rl_admittance res=1.7163940022728272 ind=1.4409367741345707e-06
+X1330 nt_n_14 nt_c_14 rl_admittance res=22693.881014642928 ind=0.772125344090292
+X1331 nt_n_14 nt_c_14 rl_admittance res=654635.4493725481 ind=217.9728567868157
+X1332 nt_n_14 nt_c_14 rl_admittance res=64525.162089285215 ind=250.5420332004972
+* Transfer network from port 15 to port 14
+R14_15 nt_n_15 nt_c_14 48.25345375540753
+X1333 nt_p_15 nt_c_14 rl_admittance res=31.435691029517457 ind=2.720468759954345e-06
+X1334 nt_n_15 nt_c_14 rl_admittance res=1105.9704686611765 ind=0.0004227327578629536
+X1335 nt_n_15 nt_c_14 rl_admittance res=98.1939088675442 ind=8.243516004827695e-05
+X1336 nt_p_15 nt_c_14 rl_admittance res=524064.5819347672 ind=17.83051322913107
+X1337 nt_n_15 nt_c_14 rl_admittance res=880798.2448291826 ind=293.27789972609617
+X1338 nt_p_15 nt_c_14 rl_admittance res=4575427.536667323 ind=17765.734802989817
+* Transfer network from port 16 to port 14
+R14_16 nt_p_16 nt_c_14 134.11145088072672
+X1339 nt_n_16 nt_c_14 rl_admittance res=42.23987339420411 ind=3.6554709704157224e-06
+X1340 nt_p_16 nt_c_14 rl_admittance res=77.89543896870194 ind=2.9773809222995468e-05
+X1341 nt_p_16 nt_c_14 rl_admittance res=295.74754648848597 ind=0.00024828420224670206
+X1342 nt_n_16 nt_c_14 rl_admittance res=4232187.813897421 ind=143.99385763729856
+X1343 nt_n_16 nt_c_14 rl_admittance res=5274156.951132903 ind=1756.127106899521
+X1344 nt_n_16 nt_c_14 rl_admittance res=4354425.309030514 ind=16907.61456491358
+
+* Port network for port 15
+R_ref_15 p15 a15 50.0
+H_b_15 a15 0 V_c_15 14.142135623730951
+* Differential incident wave a sources for transfer from port 15
+H_p_15 nt_p_15 nts_p_15 H_b_15 3.5355339059327378
+E_p_15 nts_p_15 0 p15 0 0.07071067811865475
+E_n_15 0 nt_n_15 nt_p_15 0 1
+* Current sensor on center node for transfer to port 15
+V_c_15 nt_c_15 0 0
+* Transfer network from port 1 to port 15
+R15_1 nt_p_1 nt_c_15 33.825168413191186
+X1345 nt_n_1 nt_c_15 rl_admittance res=49.05932191413345 ind=4.24563126436837e-06
+X1346 nt_n_1 nt_c_15 rl_admittance res=118.91869646114576 ind=4.5454042346485566e-05
+X1347 nt_n_1 nt_c_15 rl_admittance res=1299.6033432434278 ind=0.0010910351857370472
+X1348 nt_n_1 nt_c_15 rl_admittance res=1811108.271853417 ind=61.6202489423159
+X1349 nt_n_1 nt_c_15 rl_admittance res=2257271.998954238 ind=751.600034230554
+X1350 nt_n_1 nt_c_15 rl_admittance res=1421449.2712729762 ind=5519.285484681246
+* Transfer network from port 2 to port 15
+R15_2 nt_p_2 nt_c_15 16.759307259003833
+X1351 nt_n_2 nt_c_15 rl_admittance res=22.76429261374266 ind=1.9700393046870132e-06
+X1352 nt_n_2 nt_c_15 rl_admittance res=71.15442136587103 ind=2.719720429294065e-05
+X1353 nt_n_2 nt_c_15 rl_admittance res=594.0084952092216 ind=0.0004986784408252979
+X1354 nt_n_2 nt_c_15 rl_admittance res=1184297.6966871219 ind=40.29395703493214
+X1355 nt_n_2 nt_c_15 rl_admittance res=953234.0895069934 ind=317.396740240037
+X1356 nt_n_2 nt_c_15 rl_admittance res=1796764.2796072713 ind=6976.580317178079
+* Transfer network from port 3 to port 15
+R15_3 nt_p_3 nt_c_15 13.839583069732845
+X1357 nt_n_3 nt_c_15 rl_admittance res=19.3492823661941 ind=1.6745017042997244e-06
+X1358 nt_n_3 nt_c_15 rl_admittance res=56.50767490232285 ind=2.159880930708678e-05
+X1359 nt_n_3 nt_c_15 rl_admittance res=347.6343460982142 ind=0.0002918438963209094
+X1360 nt_n_3 nt_c_15 rl_admittance res=28946287.97432339 ind=984.8541352574283
+X1361 nt_n_3 nt_c_15 rl_admittance res=750183.6095167289 ind=249.78736583503994
+X1362 nt_n_3 nt_c_15 rl_admittance res=3073024.5865538716 ind=11932.11768960708
+* Transfer network from port 4 to port 15
+R15_4 nt_p_4 nt_c_15 537.4143977889829
+X1363 nt_n_4 nt_c_15 rl_admittance res=809.8160163956801 ind=7.008209782461845e-05
+X1364 nt_n_4 nt_c_15 rl_admittance res=1807.5264614678756 ind=0.0006908870242182476
+X1365 nt_n_4 nt_c_15 rl_admittance res=13785.846480873857 ind=0.011573410959581795
+X1366 nt_n_4 nt_c_15 rl_admittance res=30645905.316438753 ind=1042.6810721421284
+X1367 nt_n_4 nt_c_15 rl_admittance res=15065619.861668197 ind=5016.373927900699
+X1368 nt_n_4 nt_c_15 rl_admittance res=30658687.825533494 ind=119043.32719753082
+* Transfer network from port 5 to port 15
+R15_5 nt_n_5 nt_c_15 599.0277267782834
+X1369 nt_p_5 nt_c_15 rl_admittance res=55.73761902788967 ind=4.823576207605267e-06
+X1370 nt_n_5 nt_c_15 rl_admittance res=70.19701556097677 ind=2.683125709293368e-05
+X1371 nt_n_5 nt_c_15 rl_admittance res=493.79598954059895 ind=0.0004145486405260223
+X1372 nt_n_5 nt_c_15 rl_admittance res=4616391.757802772 ind=157.06582193451842
+X1373 nt_n_5 nt_c_15 rl_admittance res=1584584.425223059 ind=527.616392171885
+X1374 nt_n_5 nt_c_15 rl_admittance res=4442390.577178572 ind=17249.17119831414
+* Transfer network from port 6 to port 15
+R15_6 nt_n_6 nt_c_15 41.89103093335342
+X1375 nt_p_6 nt_c_15 rl_admittance res=21.813809131108247 ind=1.887783736678931e-06
+X1376 nt_n_6 nt_c_15 rl_admittance res=51.82546787129868 ind=1.980913919635931e-05
+X1377 nt_n_6 nt_c_15 rl_admittance res=373.8445954505871 ind=0.0003138477672858859
+X1378 nt_p_6 nt_c_15 rl_admittance res=7037061.622540291 ind=239.42549197215854
+X1379 nt_n_6 nt_c_15 rl_admittance res=1447571.994223027 ind=481.99559508702157
+X1380 nt_n_6 nt_c_15 rl_admittance res=14291349.63232701 ind=55491.27934165956
+* Transfer network from port 7 to port 15
+R15_7 nt_n_7 nt_c_15 87.36587511845455
+X1381 nt_p_7 nt_c_15 rl_admittance res=84.20330109357454 ind=7.287018118832026e-06
+X1382 nt_n_7 nt_c_15 rl_admittance res=1702.7397568964548 ind=0.0006508346233033565
+X1383 nt_p_7 nt_c_15 rl_admittance res=6333.774567089015 ind=0.0053172923470435965
+X1384 nt_n_7 nt_c_15 rl_admittance res=14048220.014871595 ind=477.96966529612024
+X1385 nt_n_7 nt_c_15 rl_admittance res=3910464.523151297 ind=1302.060748912638
+X1386 nt_n_7 nt_c_15 rl_admittance res=6202426.729380025 ind=24083.141417075603
+* Transfer network from port 8 to port 15
+R15_8 nt_n_8 nt_c_15 12.638083988340245
+X1387 nt_p_8 nt_c_15 rl_admittance res=12.304623419135854 ind=1.064851527626035e-06
+X1388 nt_n_8 nt_c_15 rl_admittance res=358.86319353057695 ind=0.00013716752101015028
+X1389 nt_p_8 nt_c_15 rl_admittance res=1556.745109112375 ind=0.0013069092951290772
+X1390 nt_n_8 nt_c_15 rl_admittance res=1676910.7471959635 ind=57.05437896902469
+X1391 nt_p_8 nt_c_15 rl_admittance res=2171894.0494632134 ind=723.1718829976865
+X1392 nt_n_8 nt_c_15 rl_admittance res=258405660.50737992 ind=1003352.4516288986
+* Transfer network from port 9 to port 15
+R15_9 nt_p_9 nt_c_15 218.18456137302073
+X1393 nt_p_9 nt_c_15 rl_admittance res=110.68338229153343 ind=9.578624611352237e-06
+X1394 nt_n_9 nt_c_15 rl_admittance res=78.52260038375435 ind=3.0013527806920483e-05
+X1395 nt_n_9 nt_c_15 rl_admittance res=1131.7122792346322 ind=0.0009500882890114081
+X1396 nt_n_9 nt_c_15 rl_admittance res=9466661.739828074 ind=322.0890004902568
+X1397 nt_p_9 nt_c_15 rl_admittance res=1485018.50514815 ind=494.4640964046192
+X1398 nt_p_9 nt_c_15 rl_admittance res=5385123.172215285 ind=20909.6678708843
+* Transfer network from port 10 to port 15
+R15_10 nt_n_10 nt_c_15 110.54188582169199
+X1399 nt_p_10 nt_c_15 rl_admittance res=47.9399437702088 ind=4.148759423114324e-06
+X1400 nt_n_10 nt_c_15 rl_admittance res=117.97269374341109 ind=4.5092453724415096e-05
+X1401 nt_n_10 nt_c_15 rl_admittance res=299.45549473238805 ind=0.0002513970766649016
+X1402 nt_p_10 nt_c_15 rl_admittance res=370577.35161121597 ind=12.608339884229421
+X1403 nt_n_10 nt_c_15 rl_admittance res=1557578.8039097032 ind=518.6243761840292
+X1404 nt_p_10 nt_c_15 rl_admittance res=1261672.5232893704 ind=4898.895081901873
+* Transfer network from port 11 to port 15
+R15_11 nt_n_11 nt_c_15 65.2248306124019
+X1405 nt_p_11 nt_c_15 rl_admittance res=18.03575858198633 ind=1.5608283507526714e-06
+X1406 nt_n_11 nt_c_15 rl_admittance res=30.37911428874478 ind=1.1611744733348096e-05
+X1407 nt_n_11 nt_c_15 rl_admittance res=138.96444274696015 ind=0.00011666259354557234
+X1408 nt_p_11 nt_c_15 rl_admittance res=665258.6483324212 ind=22.63443006602877
+X1409 nt_n_11 nt_c_15 rl_admittance res=579966.7683633796 ind=193.11055254149593
+X1410 nt_n_11 nt_c_15 rl_admittance res=8024831.159980993 ind=31159.27879623579
+* Transfer network from port 12 to port 15
+R15_12 nt_n_12 nt_c_15 199.04288002918108
+X1411 nt_p_12 nt_c_15 rl_admittance res=113.94866283678202 ind=9.861204488711841e-06
+X1412 nt_n_12 nt_c_15 rl_admittance res=659.8629272411499 ind=0.00025221801390578556
+X1413 nt_n_12 nt_c_15 rl_admittance res=446.70970492317474 ind=0.00037501904593831715
+X1414 nt_p_12 nt_c_15 rl_admittance res=512510.8786128187 ind=17.437415761702713
+X1415 nt_n_12 nt_c_15 rl_admittance res=2971861.2013722737 ind=989.5355906220763
+X1416 nt_p_12 nt_c_15 rl_admittance res=1645455.0669147416 ind=6389.068150412861
+* Transfer network from port 13 to port 15
+R15_13 nt_n_13 nt_c_15 99.22025823946515
+X1417 nt_p_13 nt_c_15 rl_admittance res=29.94100926050223 ind=2.5911178557588205e-06
+X1418 nt_n_13 nt_c_15 rl_admittance res=52.485152388830805 ind=2.0061289017098584e-05
+X1419 nt_n_13 nt_c_15 rl_admittance res=234.345412642564 ind=0.00019673625197901156
+X1420 nt_p_13 nt_c_15 rl_admittance res=1155269.7475128283 ind=39.30632449953747
+X1421 nt_n_13 nt_c_15 rl_admittance res=1107594.900171384 ind=368.7939979178717
+X1422 nt_n_13 nt_c_15 rl_admittance res=9243521.373820262 ind=35891.27967977238
+* Transfer network from port 14 to port 15
+R15_14 nt_n_14 nt_c_15 48.21885913702248
+X1423 nt_p_14 nt_c_15 rl_admittance res=31.405743396105702 ind=2.7178770688394673e-06
+X1424 nt_n_14 nt_c_15 rl_admittance res=1100.6350238421173 ind=0.00042069340205129545
+X1425 nt_n_14 nt_c_15 rl_admittance res=98.08765855796601 ind=8.234596142713772e-05
+X1426 nt_p_14 nt_c_15 rl_admittance res=523519.13344563683 ind=17.811955160456897
+X1427 nt_n_14 nt_c_15 rl_admittance res=879233.9879511002 ind=292.75705176286584
+X1428 nt_p_14 nt_c_15 rl_admittance res=4552666.319138666 ind=17677.356230459343
+* Transfer network from port 15 to port 15
+R15_15 nt_n_15 nt_c_15 2.788927500832854
+X1429 nt_n_15 nt_c_15 rl_admittance res=1.4542134781514426 ind=1.2584874733311303e-07
+X1430 nt_p_15 nt_c_15 rl_admittance res=18.770632736594848 ind=7.174659331708001e-06
+X1431 nt_n_15 nt_c_15 rl_admittance res=143.0598643330633 ind=0.00012010075725459614
+X1432 nt_n_15 nt_c_15 rl_admittance res=21987.82081335771 ind=0.7481027022374487
+X1433 nt_n_15 nt_c_15 rl_admittance res=522574.20873258763 ind=174.00064917005167
+X1434 nt_p_15 nt_c_15 rl_admittance res=3618487.963066212 ind=14050.0744519428
+* Transfer network from port 16 to port 15
+R15_16 nt_n_16 nt_c_15 1677.4254367424332
+X1435 nt_p_16 nt_c_15 rl_admittance res=3237.5409947511207 ind=0.00028017927543001227
+X1436 nt_p_16 nt_c_15 rl_admittance res=4599.899388897092 ind=0.0017582098344040913
+X1437 nt_p_16 nt_c_15 rl_admittance res=14224.00887738036 ind=0.011941254420543036
+X1438 nt_n_16 nt_c_15 rl_admittance res=13068825.550946781 ind=444.6472341539927
+X1439 nt_n_16 nt_c_15 rl_admittance res=5104128.177887359 ind=1699.5129142586982
+X1440 nt_n_16 nt_c_15 rl_admittance res=7550562.2127427375 ind=29317.759883652336
+
+* Port network for port 16
+R_ref_16 p16 a16 50.0
+H_b_16 a16 0 V_c_16 14.142135623730951
+* Differential incident wave a sources for transfer from port 16
+H_p_16 nt_p_16 nts_p_16 H_b_16 3.5355339059327378
+E_p_16 nts_p_16 0 p16 0 0.07071067811865475
+E_n_16 0 nt_n_16 nt_p_16 0 1
+* Current sensor on center node for transfer to port 16
+V_c_16 nt_c_16 0 0
+* Transfer network from port 1 to port 16
+R16_1 nt_n_1 nt_c_16 21.519651573907147
+X1441 nt_p_1 nt_c_16 rl_admittance res=22.487225783592482 ind=1.9460617291619394e-06
+X1442 nt_p_1 nt_c_16 rl_admittance res=570.0136736128048 ind=0.00021787512333636794
+X1443 nt_p_1 nt_c_16 rl_admittance res=4042.289595323019 ind=0.0033935586595440896
+X1444 nt_p_1 nt_c_16 rl_admittance res=1301901.4803014775 ind=44.29524979886987
+X1445 nt_n_1 nt_c_16 rl_admittance res=679770.5775632644 ind=226.34205784777953
+X1446 nt_n_1 nt_c_16 rl_admittance res=645743.9367372022 ind=2507.3319244539703
+* Transfer network from port 2 to port 16
+R16_2 nt_p_2 nt_c_16 25.083453332982614
+X1447 nt_n_2 nt_c_16 rl_admittance res=23.11089743596015 ind=2.0000347512641797e-06
+X1448 nt_p_2 nt_c_16 rl_admittance res=336.8942171220675 ind=0.00012877036552747477
+X1449 nt_p_2 nt_c_16 rl_admittance res=2285.464399605899 ind=0.001918679332954264
+X1450 nt_n_2 nt_c_16 rl_admittance res=4087882.08439102 ind=139.08407111918663
+X1451 nt_n_2 nt_c_16 rl_admittance res=610284.9763293298 ind=203.20555489636243
+X1452 nt_n_2 nt_c_16 rl_admittance res=797146.2419173517 ind=3095.2055561170478
+* Transfer network from port 3 to port 16
+R16_3 nt_p_3 nt_c_16 78.20814334764445
+X1453 nt_n_3 nt_c_16 rl_admittance res=49.96046700170858 ind=4.323617049908524e-06
+X1454 nt_p_3 nt_c_16 rl_admittance res=149.77426102133379 ind=5.7247899661443165e-05
+X1455 nt_p_3 nt_c_16 rl_admittance res=1799.4958008899985 ind=0.00151070189651652
+X1456 nt_p_3 nt_c_16 rl_admittance res=33347825.01191002 ind=1134.60984682919
+X1457 nt_n_3 nt_c_16 rl_admittance res=530548.6646673632 ind=176.65589025589514
+X1458 nt_n_3 nt_c_16 rl_admittance res=872826.6810916958 ind=3389.0619446993765
+* Transfer network from port 4 to port 16
+R16_4 nt_p_4 nt_c_16 183.75126265606696
+X1459 nt_n_4 nt_c_16 rl_admittance res=172.61315112914644 ind=1.4938074202446735e-05
+X1460 nt_p_4 nt_c_16 rl_admittance res=2803.1138482836227 ind=0.0010714282896931472
+X1461 nt_n_4 nt_c_16 rl_admittance res=186134.62176384812 ind=0.15626261865515717
+X1462 nt_p_4 nt_c_16 rl_admittance res=127228213.79989037 ind=4328.749599720208
+X1463 nt_n_4 nt_c_16 rl_admittance res=7313997.359847156 ind=2435.3293128032774
+X1464 nt_n_4 nt_c_16 rl_admittance res=12150383.613795215 ind=47178.21259486247
+* Transfer network from port 5 to port 16
+R16_5 nt_n_5 nt_c_16 155.9120490414023
+X1465 nt_p_5 nt_c_16 rl_admittance res=294.96687703529415 ind=2.552665928171677e-05
+X1466 nt_p_5 nt_c_16 rl_admittance res=423.8488220539782 ind=0.00016200684063539332
+X1467 nt_p_5 nt_c_16 rl_admittance res=1504.1002377033017 ind=0.0012627131891752754
+X1468 nt_p_5 nt_c_16 rl_admittance res=1923863.7154484144 ind=65.45658419178979
+X1469 nt_n_5 nt_c_16 rl_admittance res=1763186.554221142 ind=587.0852405564835
+X1470 nt_n_5 nt_c_16 rl_admittance res=2069231.4712794714 ind=8034.531695704229
+* Transfer network from port 6 to port 16
+R16_6 nt_n_6 nt_c_16 21.933676249528517
+X1471 nt_p_6 nt_c_16 rl_admittance res=25.939149819366463 ind=2.2447938770329955e-06
+X1472 nt_p_6 nt_c_16 rl_admittance res=156.88698210594927 ind=5.996658002878545e-05
+X1473 nt_p_6 nt_c_16 rl_admittance res=1501.4771605012797 ind=0.0012605110791721044
+X1474 nt_p_6 nt_c_16 rl_admittance res=882504.9417162773 ind=30.02591012724516
+X1475 nt_n_6 nt_c_16 rl_admittance res=1360559.2547502222 ind=453.023110602851
+X1476 nt_n_6 nt_c_16 rl_admittance res=4568638.145362882 ind=17739.372561555156
+* Transfer network from port 7 to port 16
+R16_7 nt_p_7 nt_c_16 6.090027386612046
+X1477 nt_n_7 nt_c_16 rl_admittance res=5.905912846529876 ind=5.111022176325353e-07
+X1478 nt_p_7 nt_c_16 rl_admittance res=174.4810667492056 ind=6.669152986611838e-05
+X1479 nt_n_7 nt_c_16 rl_admittance res=1640.1855541176387 ind=0.001376958715890876
+X1480 nt_n_7 nt_c_16 rl_admittance res=1924239.3111752546 ind=65.46936327438206
+X1481 nt_n_7 nt_c_16 rl_admittance res=817534.5908215836 ind=272.2131080041902
+X1482 nt_n_7 nt_c_16 rl_admittance res=1174968.7118996982 ind=4562.236505798766
+* Transfer network from port 8 to port 16
+R16_8 nt_p_8 nt_c_16 84.88124801470592
+X1483 nt_n_8 nt_c_16 rl_admittance res=83.4095816507043 ind=7.218329030799275e-06
+X1484 nt_p_8 nt_c_16 rl_admittance res=3034.2060039000244 ind=0.0011597581565678699
+X1485 nt_n_8 nt_c_16 rl_admittance res=8180.5515468078365 ind=0.006867687454564506
+X1486 nt_p_8 nt_c_16 rl_admittance res=11197833.7035971 ind=380.9895361607377
+X1487 nt_p_8 nt_c_16 rl_admittance res=3708402.4603208653 ind=1234.7804860952158
+X1488 nt_p_8 nt_c_16 rl_admittance res=5936578.658519409 ind=23050.891143861507
+* Transfer network from port 9 to port 16
+R16_9 nt_n_9 nt_c_16 18.101316417648693
+X1489 nt_p_9 nt_c_16 rl_admittance res=24.674028968580956 ind=2.1353093503878796e-06
+X1490 nt_p_9 nt_c_16 rl_admittance res=65.1045243502501 ind=2.4884764926185917e-05
+X1491 nt_n_9 nt_c_16 rl_admittance res=1533.0509328423896 ind=0.0012870177027120453
+X1492 nt_p_9 nt_c_16 rl_admittance res=238464.72054406637 ind=8.113405295668844
+X1493 nt_p_9 nt_c_16 rl_admittance res=391898.350997868 ind=130.4897301527492
+X1494 nt_p_9 nt_c_16 rl_admittance res=578209.4258535757 ind=2245.1050176145595
+* Transfer network from port 10 to port 16
+R16_10 nt_p_10 nt_c_16 94.11806439989373
+X1495 nt_p_10 nt_c_16 rl_admittance res=133.4425096211155 ind=1.1548216908394915e-05
+X1496 nt_n_10 nt_c_16 rl_admittance res=54.86099774955038 ind=2.0969403374626316e-05
+X1497 nt_p_10 nt_c_16 rl_admittance res=8856.87525180914 ind=0.007435470665450146
+X1498 nt_n_10 nt_c_16 rl_admittance res=396367.57250737783 ind=13.485813559656064
+X1499 nt_p_10 nt_c_16 rl_admittance res=64147889.51586175 ind=21359.21412141565
+X1500 nt_n_10 nt_c_16 rl_admittance res=841010.7000236497 ind=3265.525012331399
+* Transfer network from port 11 to port 16
+R16_11 nt_p_11 nt_c_16 97.61709502537471
+X1501 nt_n_11 nt_c_16 rl_admittance res=64.65333229601255 ind=5.595148857173042e-06
+X1502 nt_p_11 nt_c_16 rl_admittance res=309.0086652982009 ind=0.00011811172991191132
+X1503 nt_p_11 nt_c_16 rl_admittance res=502.5876279800728 ind=0.0004219293439749727
+X1504 nt_n_11 nt_c_16 rl_admittance res=1614836.4515418885 ind=54.942393942746484
+X1505 nt_n_11 nt_c_16 rl_admittance res=724160.4229900877 ind=241.12246949411465
+X1506 nt_n_11 nt_c_16 rl_admittance res=1034339.9868238022 ind=4016.195154393011
+* Transfer network from port 12 to port 16
+R16_12 nt_p_12 nt_c_16 498.24353623084056
+X1507 nt_p_12 nt_c_16 rl_admittance res=135.65991305456313 ind=1.1740112698541393e-05
+X1508 nt_n_12 nt_c_16 rl_admittance res=107.61461737694249 ind=4.113330805766602e-05
+X1509 nt_n_12 nt_c_16 rl_admittance res=11502.079832523683 ind=0.00965615691255516
+X1510 nt_p_12 nt_c_16 rl_admittance res=1272110.7739501083 ind=43.281665591858214
+X1511 nt_n_12 nt_c_16 rl_admittance res=2740658.5354249794 ind=912.5524305418165
+X1512 nt_p_12 nt_c_16 rl_admittance res=2267072.7091525537 ind=8802.721102482275
+* Transfer network from port 13 to port 16
+R16_13 nt_p_13 nt_c_16 251.87020658028717
+X1513 nt_n_13 nt_c_16 rl_admittance res=141.43222026434563 ind=1.2239652582119183e-05
+X1514 nt_p_13 nt_c_16 rl_admittance res=532.3724312347927 ind=0.00020348759071164304
+X1515 nt_p_13 nt_c_16 rl_admittance res=817.7314991933949 ind=0.0006864970321474368
+X1516 nt_n_13 nt_c_16 rl_admittance res=8360163.444303119 ind=284.44205166663926
+X1517 nt_n_13 nt_c_16 rl_admittance res=2640288.1760400455 ind=879.1322819800132
+X1518 nt_n_13 nt_c_16 rl_admittance res=1944497.9178617736 ind=7550.209036609627
+* Transfer network from port 14 to port 16
+R16_14 nt_p_14 nt_c_16 134.51317682034454
+X1519 nt_n_14 nt_c_16 rl_admittance res=42.13185624909504 ind=3.6461230840106553e-06
+X1520 nt_p_14 nt_c_16 rl_admittance res=77.47969013996803 ind=2.961489842571014e-05
+X1521 nt_p_14 nt_c_16 rl_admittance res=294.57023353791203 ind=0.0002472958315562309
+X1522 nt_n_14 nt_c_16 rl_admittance res=4151370.9797147526 ind=141.2441857825234
+X1523 nt_n_14 nt_c_16 rl_admittance res=5339506.982950994 ind=1777.8865963071778
+X1524 nt_n_14 nt_c_16 rl_admittance res=4340272.935590934 ind=16852.662910375173
+* Transfer network from port 15 to port 16
+R16_15 nt_n_15 nt_c_16 1490.040838671875
+X1525 nt_p_15 nt_c_16 rl_admittance res=2592.439687659111 ind=0.00022435171460745426
+X1526 nt_p_15 nt_c_16 rl_admittance res=4638.15841662735 ind=0.0017728335018200449
+X1527 nt_p_15 nt_c_16 rl_admittance res=14244.300902292218 ind=0.011958289859305016
+X1528 nt_n_15 nt_c_16 rl_admittance res=12928511.101984296 ind=439.87324498413267
+X1529 nt_n_15 nt_c_16 rl_admittance res=5213851.534673003 ind=1736.0473145233484
+X1530 nt_n_15 nt_c_16 rl_admittance res=7425649.485381165 ind=28832.741517600298
+* Transfer network from port 16 to port 16
+R16_16 nt_p_16 nt_c_16 51.788370790616774
+X1531 nt_n_16 nt_c_16 rl_admittance res=0.9256914454187262 ind=8.011004613367596e-08
+X1532 nt_p_16 nt_c_16 rl_admittance res=14.249732189174757 ind=5.446645057738698e-06
+X1533 nt_n_16 nt_c_16 rl_admittance res=109.9054559828093 ind=9.226716767475939e-05
+X1534 nt_n_16 nt_c_16 rl_admittance res=12690.958882811059 ind=0.43179088618220723
+X1535 nt_n_16 nt_c_16 rl_admittance res=455450.8003265358 ind=151.6506815635635
+X1536 nt_n_16 nt_c_16 rl_admittance res=1019799.5110055221 ind=3959.7365534804917
+.ENDS s_equivalent
+
+.SUBCKT rcl_vccs_admittance n_pos n_neg res=1e3 cap=1e-9 ind=100e-12 gm=1e-3
+L1 n_pos 1 {ind}
+C1 1 2 {cap}
+R1 2 n_neg {res}
+G1 n_pos n_neg 1 2 {gm}
+.ENDS rcl_vccs_admittance
+
+.SUBCKT rl_admittance n_pos n_neg res=1e3 ind=100e-12
+L1 n_pos 1 {ind}
+R1 1 n_neg {res}
+.ENDS rl_admittance
+
