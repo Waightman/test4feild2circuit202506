@@ -5,19 +5,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 import io
-
+import wyz_io
 
 # 创建或连接数据库
 def create_connection():
     conn = sqlite3.connect('aircraft_lightning.db')
     return conn
 
-
 # 初始化数据库表
 def init_db():
-    conn = create_connection()
-    cursor = conn.cursor()
-
+    conn = create_connection()####建立数据库链接
+    cursor = conn.cursor()####创建游标，执行SQL语句
     # 创建雷电分区表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS lightning_zones (
@@ -28,7 +26,6 @@ def init_db():
         upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-
     # 创建雷电间击环境表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS indirect_effects (
@@ -41,22 +38,34 @@ def init_db():
         upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     ''')
-
-    conn.commit()
+    conn.commit()####提交，将内存中数据提交到硬盘中的文件
     conn.close()
-
 
 # 初始化数据库
 init_db()
-
-
 # 主页面
 def main():
+    #########0  显示公司logo
+    LOGO_PATH = "company_logo.jpg"
+    # 检查图片是否存在
+    if not os.path.exists(LOGO_PATH):
+        st.error("公司logo图片未找到，请确保company_logo.jpg文件存在")
+        logo_html = ""
+    else:
+        logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+        logo_html = f"""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 40px;">
+            <h3 style="margin: 0;">中航通飞华南飞机工业有限公司</h3>
+        </div>
+        """
+    st.markdown(logo_html, unsafe_allow_html=True)
+
     st.title("飞机雷电分区和雷电间击环境数据库系统")
 
     # 侧边栏导航
-    menu = ["雷电分区数据库", "雷电间击环境数据库", "关于"]
-    choice = st.sidebar.selectbox("导航", menu)
+    menu = ["雷电分区数据库", "雷电间击环境数据库", "关于"]####创建一个列表
+    choice = st.sidebar.selectbox("子数据库选择", menu)
     # 操作选项
     operation = st.sidebar.radio("选择操作", ["查看数据", "添加数据", "修改数据", "删除数据"])
     if choice == "雷电分区数据库":
@@ -65,15 +74,9 @@ def main():
         indirect_effects_page(operation)
     else:
         about_page()
-
-
 # 雷电分区数据库页面
 def lightning_zones_page(operation):
     st.header("雷电分区数据库")
-
-    # # 操作选项
-    # operation = st.radio("选择操作", ["查看数据", "添加数据", "修改数据", "删除数据"])
-
     if operation == "查看数据":
         view_lightning_zones()
     elif operation == "添加数据":
@@ -82,15 +85,9 @@ def lightning_zones_page(operation):
         update_lightning_zone()
     elif operation == "删除数据":
         delete_lightning_zone()
-
-
 # 雷电间击环境数据库页面
 def indirect_effects_page(operation):
     st.header("雷电间击环境数据库")
-
-    # # 操作选项
-    # operation = st.radio("选择操作", ["查看数据", "添加数据", "修改数据", "删除数据"])
-
     if operation == "查看数据":
         view_indirect_effects()
     elif operation == "添加数据":
@@ -99,67 +96,60 @@ def indirect_effects_page(operation):
         update_indirect_effect()
     elif operation == "删除数据":
         delete_indirect_effect()
-
-
 # 关于页面
 def about_page():
     st.header("关于")
     st.write("""
     ### 飞机雷电分区和雷电间击环境数据库系统
-
     本系统用于管理飞机雷电分区和雷电间击环境的仿真测试数据。
-
     **功能包括:**
     - 雷电分区图片的存储和管理
     - 雷电间击环境仿真数据的存储和管理
     - 数据查询、添加、修改和删除
-
-    **开发人员:** [您的姓名]
+    **开发人员:** [WYZ]
     """)
-
-
 # ========== 雷电分区数据库功能 ==========
-
 def view_lightning_zones():
     st.subheader("查看雷电分区数据")
-
     # 搜索选项
-    aircraft_model = st.text_input("输入飞机型号进行搜索", "")
-
-    conn = create_connection()
-
-    if aircraft_model:
-        query = "SELECT * FROM lightning_zones WHERE aircraft_model LIKE ?"
-        params = (f"%{aircraft_model}%",)
-    else:
-        query = "SELECT * FROM lightning_zones"
-        params = ()
-
-    df = pd.read_sql_query(query, conn, params=params)
-
-    if df.empty:
-        st.warning("没有找到匹配的记录")
-    else:
-        st.dataframe(df.drop(columns=['zone_image']))
-
-        # 显示选中的图片
-        selected_id = st.selectbox("选择记录查看图片", df['id'])
-
-        selected_record = df[df['id'] == selected_id].iloc[0]
-
-        if selected_record['zone_image'] is not None:
-            try:
-                image = Image.open(io.BytesIO(selected_record['zone_image']))
-                st.image(image, caption=f"飞机型号: {selected_record['aircraft_model']}")
-            except:
-                st.error("无法显示图片")
+    aircraft_model = st.text_input("输入飞机型号进行搜索", "")####返回值就是网页输入的字符串
+    # 添加查询按钮
+    if st.button("查询"):###在界面上生成一个查询按钮，点击了返回ture
+        conn = create_connection()
+        if aircraft_model:
+            query = "SELECT * FROM lightning_zones WHERE aircraft_model LIKE ?"
+            params = (f"%{aircraft_model}%",)
         else:
-            st.warning("该记录没有图片")
+            query = "SELECT * FROM lightning_zones"
+            params = ()
 
-        st.write(f"描述: {selected_record['description']}")
-        st.write(f"上传日期: {selected_record['upload_date']}")
+        df = pd.read_sql_query(query, conn, params=params)
 
-    conn.close()
+        if df.empty:
+            st.warning("没有找到匹配的记录")
+        else:
+            st.dataframe(df.drop(columns=['zone_image']))
+
+            # 显示选中的图片
+            selected_id = st.selectbox("选择记录查看图片", df['id'])
+
+            selected_record = df[df['id'] == selected_id].iloc[0]
+
+            if selected_record['zone_image'] is not None:
+                try:
+                    image = Image.open(io.BytesIO(selected_record['zone_image']))
+                    st.image(image, caption=f"飞机型号: {selected_record['aircraft_model']}")
+                except:
+                    st.error("无法显示图片")
+            else:
+                st.warning("该记录没有图片")
+
+            st.write(f"描述: {selected_record['description']}")
+            st.write(f"上传日期: {selected_record['upload_date']}")
+
+        conn.close()
+    else:
+        st.info("请输入搜索条件并点击查询按钮")
 
 
 def add_lightning_zone():
@@ -302,83 +292,87 @@ def view_indirect_effects():
     with col2:
         test_point = st.text_input("电流探针测试点", "")
 
-    conn = create_connection()
+    # 添加查询按钮
+    if st.button("查询"):
+        conn = create_connection()
 
-    query = "SELECT * FROM indirect_effects WHERE 1=1"
-    params = []
+        query = "SELECT * FROM indirect_effects WHERE 1=1"
+        params = []
 
-    if aircraft_model:
-        query += " AND aircraft_model LIKE ?"
-        params.append(f"%{aircraft_model}%")
+        if aircraft_model:
+            query += " AND aircraft_model LIKE ?"
+            params.append(f"%{aircraft_model}%")
 
-    if test_point:
-        query += " AND test_point LIKE ?"
-        params.append(f"%{test_point}%")
+        if test_point:
+            query += " AND test_point LIKE ?"
+            params.append(f"%{test_point}%")
 
-    df = pd.read_sql_query(query, conn, params=params if params else None)
+        df = pd.read_sql_query(query, conn, params=params if params else None)
 
-    if df.empty:
-        st.warning("没有找到匹配的记录")
-    else:
-        st.dataframe(df.drop(columns=['data_file']))
-
-        # 显示选中的数据
-        selected_id = st.selectbox("选择记录查看数据", df['id'])
-
-        selected_record = df[df['id'] == selected_id].iloc[0]
-
-        if selected_record['data_file'] is not None:
-            try:
-                # 尝试解析数据文件为二维曲线
-                data_text = selected_record['data_file'].decode('utf-8')
-                data_lines = data_text.split('\n')
-
-                # 解析数据为频率和电压/电流值
-                frequencies = []
-                values = []
-
-                for line in data_lines:
-                    if line.strip() and not line.startswith('#'):  # 忽略注释和空行
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            try:
-                                freq = float(parts[0])
-                                val = float(parts[1])
-                                frequencies.append(freq)
-                                values.append(val)
-                            except ValueError:
-                                continue
-
-                if frequencies and values:
-                    # 绘制曲线图
-                    fig, ax = plt.subplots()
-                    ax.plot(frequencies, values)
-                    ax.set_xlabel('频率 (Hz)')
-                    ax.set_ylabel('电压 (V)' if selected_record['data_type'] == 'voltage' else '电流 (A)')
-                    ax.set_title(f"飞机型号: {selected_record['aircraft_model']}\n测试点: {selected_record['test_point']}")
-                    ax.grid(True)
-
-                    st.pyplot(fig)
-                else:
-                    st.warning("无法解析数据文件内容")
-
-                # 提供下载链接
-                st.download_button(
-                    label="下载数据文件",
-                    data=selected_record['data_file'],
-                    file_name=f"{selected_record['aircraft_model']}_{selected_record['test_point']}.txt",
-                    mime="text/plain"
-                )
-            except Exception as e:
-                st.error(f"显示数据时出错: {e}")
+        if df.empty:
+            st.warning("没有找到匹配的记录")
         else:
-            st.warning("该记录没有数据文件")
+            st.dataframe(df.drop(columns=['data_file']))
 
-        st.write(f"数据类型: {selected_record['data_type']}")
-        st.write(f"描述: {selected_record['description']}")
-        st.write(f"上传日期: {selected_record['upload_date']}")
+            # 显示选中的数据
+            selected_id = st.selectbox("选择记录查看数据", df['id'])
 
-    conn.close()
+            selected_record = df[df['id'] == selected_id].iloc[0]
+
+            if selected_record['data_file'] is not None:
+                try:
+                    # 尝试解析数据文件为二维曲线
+                    data_text = selected_record['data_file'].decode('utf-8')
+                    data_lines = data_text.split('\n')
+
+                    # 解析数据为频率和电压/电流值
+                    frequencies = []
+                    values = []
+
+                    for line in data_lines:
+                        if line.strip() and not line.startswith('#'):  # 忽略注释和空行
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                try:
+                                    freq = float(parts[0])
+                                    val = float(parts[1])
+                                    frequencies.append(freq)
+                                    values.append(val)
+                                except ValueError:
+                                    continue
+
+                    if frequencies and values:
+                        # 绘制曲线图
+                        fig, ax = plt.subplots()
+                        ax.plot(frequencies, values)
+                        ax.set_xlabel('频率 (Hz)')
+                        ax.set_ylabel('电压 (V)' if selected_record['data_type'] == 'voltage' else '电流 (A)')
+                        ax.set_title(f"飞机型号: {selected_record['aircraft_model']}\n测试点: {selected_record['test_point']}")
+                        ax.grid(True)
+
+                        st.pyplot(fig)
+                    else:
+                        st.warning("无法解析数据文件内容")
+
+                    # 提供下载链接
+                    st.download_button(
+                        label="下载数据文件",
+                        data=selected_record['data_file'],
+                        file_name=f"{selected_record['aircraft_model']}_{selected_record['test_point']}.txt",
+                        mime="text/plain"
+                    )
+                except Exception as e:
+                    st.error(f"显示数据时出错: {e}")
+            else:
+                st.warning("该记录没有数据文件")
+
+            st.write(f"数据类型: {selected_record['data_type']}")
+            st.write(f"描述: {selected_record['description']}")
+            st.write(f"上传日期: {selected_record['upload_date']}")
+
+        conn.close()
+    else:
+        st.info("请输入搜索条件并点击查询按钮")
 
 
 def add_indirect_effect():
@@ -514,7 +508,6 @@ def delete_indirect_effect():
             st.error(f"删除记录时出错: {e}")
         finally:
             conn.close()
-
 
 
 main()

@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import re
 import os
 import numpy as np
-
+import base64
 
 def read_matrix_from_txt(file_path):
     matrix_data = []
@@ -73,6 +73,11 @@ def read_ztm_data(xml_file_pathname):
         Z_fnn_list.append(kk)
     Z_fnn_matrix = np.stack(Z_fnn_list, axis=0)
     return Z_fnn_matrix
+#### 显示公司logo 部分函数
+def image_to_base64(image_path):
+    """将图片转换为base64编码"""
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
 if __name__ == '__main__':
     xml_file_pathname = "E:\公司工作（低空防御）\场路仿真\场路转换算法\Composite_ZCM_3\Composite_ZCM_Configuration.xml"

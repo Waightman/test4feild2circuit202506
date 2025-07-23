@@ -8,6 +8,7 @@ from scipy.constants import pi
 import vectorfit_wyz as rf
 #import skrf as rf
 import wyz_io
+
 # 定义一个函数来清理并转换为复数
 def to_complex(val):
     try:
@@ -24,8 +25,21 @@ def to_complex(val):
 def is_valid_path(path):
     # 检查路径是否存在且为有效目录或文件
     return os.path.isdir(path) or os.path.isfile(path)
-# markdown
-st.markdown('西安电子科技大学')
+#########0  显示公司logo
+LOGO_PATH = "company_logo.jpg"
+# 检查图片是否存在
+if not os.path.exists(LOGO_PATH):
+    st.error("公司logo图片未找到，请确保company_logo.jpg文件存在")
+    logo_html = ""
+else:
+    logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+    logo_html = f"""
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 40px;">
+        <h3 style="margin: 0;">中航通飞华南飞机工业有限公司</h3>
+    </div>
+    """
+st.markdown(logo_html, unsafe_allow_html=True)
 
 # 设置网页标题
 st.title('环境效应仿真支持平台V0.1')

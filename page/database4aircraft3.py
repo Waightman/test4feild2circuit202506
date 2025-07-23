@@ -3,8 +3,8 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
-
-
+import wyz_io
+import os
 # 创建或连接数据库
 def create_connection(db_file):
     """创建数据库连接"""
@@ -15,14 +15,11 @@ def create_connection(db_file):
     except sqlite3.Error as e:
         st.error(f"数据库连接错误: {e}")
     return conn
-
-
 # 初始化数据库表
 def init_db(conn):
     """初始化数据库表"""
     try:
         cursor = conn.cursor()
-
         # 创建感应电流表
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS induced_current (
@@ -237,9 +234,24 @@ def generate_download_file(record):
 
 # 主页面
 def main():
+    #########0  显示公司logo
+    LOGO_PATH = "company_logo.jpg"
+    # 检查图片是否存在
+    if not os.path.exists(LOGO_PATH):
+        st.error("公司logo图片未找到，请确保company_logo.jpg文件存在")
+        logo_html = ""
+    else:
+        logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+        logo_html = f"""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+            <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 40px;">
+            <h3 style="margin: 0;">中航通飞华南飞机工业有限公司</h3>
+        </div>
+        """
+    st.markdown(logo_html, unsafe_allow_html=True)
+
     init_session_state()  # 初始化session state
     st.title("飞机HIRF环境数据库系统")
-
     # 数据库连接
     db_file = "aircraft_hirf.db"
     conn = create_connection(db_file)
@@ -253,7 +265,6 @@ def main():
     st.sidebar.title("导航")
     menu = ["感应电流数据库 (1MHz~400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
     database_type = st.sidebar.selectbox("导航", menu)
-
     operation = st.sidebar.radio(
         "选择操作",
         ("查询数据", "添加数据", "修改数据", "删除数据")
@@ -273,7 +284,6 @@ def main():
     if operation == "查询数据":
         st.header(f"{database_type} - 查询数据")
 
-        # 查询条件
         # 查询条件
         col1, col2, col3 = st.columns(3)
         with col1:
