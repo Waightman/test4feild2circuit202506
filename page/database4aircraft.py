@@ -271,7 +271,7 @@ def main():
         # 屏蔽效能数据上传
         st.markdown("**复合材料在各频率下的屏蔽效能**")
         shielding_file = st.file_uploader(
-            """上传屏蔽效能数据文件（txt格式，两列：频率、屏蔽效能）:\n
+            """上传屏蔽效能数据文件（txt格式，两列：频率(Hz)、屏蔽效能）:\n
             示例格式：\n
             100    1\n
             200    1\n
@@ -283,7 +283,7 @@ def main():
         # 介电常数数据上传
         st.markdown("**介电常数实部和虚部**")
         dielectric_file = st.file_uploader(
-            """上传介电常数数据文件（txt格式，三列：频率、实部、虚部）：\n
+            """上传介电常数数据文件（txt格式，三列：频率(Hz)、实部、虚部）：\n
             示例格式：\n
             100    1    1\n
             200    1    1\n
@@ -448,7 +448,7 @@ def main():
                 # 屏蔽效能数据上传
                 st.markdown("**更新屏蔽效能数据**")
                 shielding_file = st.file_uploader(
-                    "上传新的屏蔽效能数据文件（txt格式，两列：频率、屏蔽效能）",
+                    "上传新的屏蔽效能数据文件（txt格式，两列：频率(Hz)、屏蔽效能）",
                     type=["txt"],
                     key="modify_shielding_file"
                 )
@@ -461,7 +461,7 @@ def main():
                 # 介电常数数据上传
                 st.markdown("**更新介电常数数据**")
                 dielectric_file = st.file_uploader(
-                    "上传新的介电常数数据文件（txt格式，三列：频率、实部、虚部）",
+                    "上传新的介电常数数据文件（txt格式，三列：频率（Hz）、实部、虚部）",
                     type=["txt"],
                     key="modify_dielectric_file"
                 )
