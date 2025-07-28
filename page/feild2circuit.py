@@ -7,6 +7,7 @@ from vectfit3 import opts
 from scipy.constants import pi
 import vectorfit_wyz as rf
 #import skrf as rf
+import matplotlib.pyplot as plt
 import wyz_io
 
 # 定义一个函数来清理并转换为复数
@@ -35,8 +36,8 @@ else:
     logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
     logo_html = f"""
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 40px;">
-        <h3 style="margin: 0;">中航通飞华南飞机工业有限公司</h3>
+        <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 60px;">
+        <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
     </div>
     """
 st.markdown(logo_html, unsafe_allow_html=True)
@@ -46,7 +47,7 @@ st.title('环境效应仿真支持平台V0.1')
 # 展示一级标题
 st.header('1. 场路转化说明')
 st.text('本仿真平台支持将电磁场仿真得到的电磁数据利用矢量拟合等方法转化为时域电路模型，'
-        '文件默认类型为ztm文件，每个文件对应一个频点的数据')
+        '文件默认类型为ztm文件，每个文件对应一个频点的数据,仿真中单位默认为MHz,至少上传3个频点的数据')
 
 ### 场路转化模块
 ####1. 定义一个文件长传按钮，支持的类型暂定为txt，xls以及csv三种类型
@@ -88,7 +89,6 @@ if len(uploaded_file_set) > 3:
                 s = arr[:, 0]
                 f = arr[:, 1]
                 (SER, poles, rmserr, fit) = vectfit(f, s, poles, weights, opts)
-                aaaa = 666
                 ####
             case ".ztm":
                 ztm_file = uploaded_file#"E:\公司工作（低空防御）\场路仿真\场路转换算法\Composite_ZCM_3\Composite_ZCM_Configuration.xml"
@@ -99,8 +99,6 @@ if len(uploaded_file_set) > 3:
 
             case _:
                 print("文件格式错误")
-
-
     #####这里需要对数据进行排序
     frequency_ordered_index = np.argsort(fre_list)  ####Z矩阵也需要按照这个进行处理
     Z_f_n_n_list_ordered=[]
@@ -117,14 +115,10 @@ else:
     st.text("文件数量太少,请重新输入")
 ####2. 这里需要进行场路转化，点击按钮之后feild2cuirt_start的值为1
 
-
-# 标题
 # 标题
 st.title("场路转换模式选择")
-
 # 创建选项卡
 tab1, tab2 = st.tabs(["自动模式", "手动模式"])
-
 # 自动模式
 with tab1:
     st.header("自动模式参数设置")
@@ -220,10 +214,11 @@ with tab1:
         )
         parameter_type = st.selectbox(
             "参数类型 (parameter_type)",
-            options=['s', 'z'],
+            options=['s'],
             index=0,  # 默认选择 's'
             key="auto_parameter_type"  # 唯一的 key
         )
+        compare_flag_on = st.toggle("启用结果自动比较功能（S11），", value=True)  # 返回 True/False
 
     # 开始拟合按钮
     if st.button("开始自动转换"):
@@ -248,14 +243,29 @@ with tab1:
                         gamma=gamma,
                         nu_samples=nu_samples,
                         parameter_type=parameter_type)
+
             passive_flag = vf.is_passive()
             # vf.plot_convergence()
             # vf.passivity_enforce()  # won't do anything if model is already passive
-            frequecy_fit = np.linspace(0, 10e3, 21)
-            fit_data = vf.get_model_response(0, 0, frequecy_fit)
-
             vf.write_spice_subcircuit_s('wyz2.sp')
             spice_content = vf.generate_spice_subcircuit_s()
+            if compare_flag_on:
+                frequecy_fit = np.linspace(0, frequency_ordered[-1]*1e6, len(frequency_ordered)*10)###单位是Mhz
+                fit_data = vf.get_model_response(0, 0, frequecy_fit)
+                # 正确的方式：先创建figure和axes
+                fig, ax = plt.subplots()
+                # 绘制拟合结果
+                ax.plot(frequecy_fit / 1e6, np.abs(fit_data), label='Fitted Model')  # 转换为MHz单位
+                # 绘制原始S参数（假设绘制S11）
+                s11 = ntw.s[:, 0, 0]  # 获取S11参数
+                ax.plot(frequency_ordered, np.abs(s11), 'o', label='Original Data')  # 绘制幅度
+
+                ax.set_xlabel('Frequency (MHz)')
+                ax.set_ylabel('Magnitude')
+                ax.set_title('Model Response')
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig)
     # 将列表转换为字符串
     spice_content_str = spice_content
     # 选择存储方式

@@ -177,8 +177,8 @@ def main():
         logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
         logo_html = f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-            <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 40px;">
-            <h3 style="margin: 0;">中航通飞华南飞机工业有限公司</h3>
+            <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 60px;">
+            <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
         </div>
         """
     st.markdown(logo_html, unsafe_allow_html=True)
