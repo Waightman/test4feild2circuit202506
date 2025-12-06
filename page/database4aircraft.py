@@ -18,12 +18,10 @@ def init_db():
                   model TEXT,
                   supplier TEXT,
                   standard TEXT)''')
-
     # 创建屏蔽设计表（修改结构以支持铺层详情）
     c.execute('''CREATE TABLE IF NOT EXISTS shielding_designs
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   test_id TEXT UNIQUE,
-                  base_material_id INTEGER,
                   structure_type TEXT,
                   thickness_summary TEXT,
                   layer_details TEXT,
@@ -31,8 +29,7 @@ def init_db():
                   shielding_data TEXT,
                   dielectric_data TEXT,
                   create_time TIMESTAMP,
-                  update_time TIMESTAMP,
-                  FOREIGN KEY(base_material_id) REFERENCES materials(id))''')
+                  update_time TIMESTAMP)''')
 
     # 插入预定义的基体材料数据
     materials_data = [
@@ -72,7 +69,7 @@ def get_materials():
     return materials
 
 # 添加新的屏蔽设计（修改以支持铺层详情）
-def add_shielding_design(test_id, base_material_id, structure_type, thickness_summary, layer_details,
+def add_shielding_design(test_id, structure_type, thickness_summary, layer_details,
                          shielding_material, shielding_data, dielectric_data):
     conn = sqlite3.connect('shielding_design.db')
     c = conn.cursor()
@@ -80,10 +77,10 @@ def add_shielding_design(test_id, base_material_id, structure_type, thickness_su
         now = datetime.now()
         c.execute(
             """INSERT INTO shielding_designs 
-            (test_id, base_material_id, structure_type, thickness_summary, layer_details,
+            (test_id, structure_type, thickness_summary, layer_details,
              shielding_material, shielding_data, dielectric_data, create_time, update_time) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (test_id, base_material_id, structure_type, thickness_summary, layer_details,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (test_id, structure_type, thickness_summary, layer_details,
              shielding_material, shielding_data, dielectric_data, now, now))
         conn.commit()
         return True
@@ -92,17 +89,17 @@ def add_shielding_design(test_id, base_material_id, structure_type, thickness_su
     finally:
         conn.close()
 # 更新屏蔽设计（修改以支持铺层详情）
-def update_shielding_design(test_id, base_material_id, structure_type, thickness_summary, layer_details,
+def update_shielding_design(test_id, structure_type, thickness_summary, layer_details,
                             shielding_material, shielding_data, dielectric_data):
     conn = sqlite3.connect('shielding_design.db')
     c = conn.cursor()
     now = datetime.now()
     c.execute(
         """UPDATE shielding_designs 
-        SET base_material_id=?, structure_type=?, thickness_summary=?, layer_details=?,
+        SET structure_type=?, thickness_summary=?, layer_details=?,
             shielding_material=?, shielding_data=?, dielectric_data=?, update_time=?
         WHERE test_id=?""",
-        (base_material_id, structure_type, thickness_summary, layer_details,
+        (structure_type, thickness_summary, layer_details,
          shielding_material, shielding_data, dielectric_data, now, test_id))
     conn.commit()
     conn.close()
@@ -118,22 +115,16 @@ def delete_shielding_design(test_id):
 
 
 # 查询屏蔽设计（修改以支持新的字段）
-def get_shielding_designs(base_material=None, structure_type=None, thickness=None, shielding_material=None):
+def get_shielding_designs(structure_type=None, thickness=None, shielding_material=None):
     conn = sqlite3.connect('shielding_design.db')
     c = conn.cursor()
 
-    query = """SELECT s.test_id, m.name, m.model, m.supplier, m.standard, 
-                      s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
+    query = """SELECT s.test_id, s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
                       s.shielding_data, s.dielectric_data, s.create_time, s.update_time
                FROM shielding_designs s
-               JOIN materials m ON s.base_material_id = m.id
                WHERE 1=1"""
 
     params = []
-
-    if base_material:
-        query += " AND m.name = ?"
-        params.append(base_material)
 
     if structure_type:
         query += " AND s.structure_type = ?"
@@ -156,15 +147,42 @@ def get_shielding_designs(base_material=None, structure_type=None, thickness=Non
 def get_shielding_design(test_id):
     conn = sqlite3.connect('shielding_design.db')
     c = conn.cursor()
-    c.execute("""SELECT s.test_id, m.id, m.name, m.model, m.supplier, m.standard, 
-                        s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
+    c.execute("""SELECT s.test_id, s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
                         s.shielding_data, s.dielectric_data
                  FROM shielding_designs s
-                 JOIN materials m ON s.base_material_id = m.id
                  WHERE s.test_id = ?""", (test_id,))
     design = c.fetchone()
     conn.close()
     return design
+##20250805
+# 在原有代码基础上添加以下函数
+# 添加新的基体材料
+def add_material(name, model, supplier, standard):
+    conn = sqlite3.connect('shielding_design.db')
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO materials (name, model, supplier, standard) VALUES (?, ?, ?, ?)",
+                  (name, model, supplier, standard))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+
+# 删除基体材料
+def delete_material(material_id):
+    conn = sqlite3.connect('shielding_design.db')
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM materials WHERE id=?", (material_id,))
+        conn.commit()
+        return True, "材料删除成功"
+    finally:
+        conn.close()
+
+
 # 主页面
 def main():
     #########step 0:  显示公司logo
@@ -188,7 +206,7 @@ def main():
     #st.sidebar.title("导航")
     choice = st.sidebar.radio(
         "选择操作类型",
-        ("添加新设计", "修改设计", "删除设计", "查询设计")
+        ("添加新设计", "修改设计", "删除设计", "查询设计", "材料管理")
     )
 
     # 获取所有基体材料
@@ -201,17 +219,61 @@ def main():
     # 屏蔽防护材料选项
     shielding_materials = ["铜网", "碳基膜"]
 
+    if choice == "材料管理":
+        st.subheader("基体材料管理")
+
+        # 添加材料选项卡
+        tab1, tab2 = st.tabs(["添加新材料", "删除材料"])
+
+        with tab1:
+            st.write("添加新的基体材料")
+            with st.form("add_material_form"):
+                name = st.text_input("材料名称*")
+                model = st.text_input("牌号*")
+                supplier = st.text_input("供应商")
+                standard = st.text_input("标准")
+
+                submitted = st.form_submit_button("添加")
+                if submitted:
+                    if not name or not model:
+                        st.error("材料名称和牌号为必填项")
+                    else:
+                        if add_material(name, model, supplier, standard):
+                            st.success("材料添加成功！")
+                            # 刷新材料列表
+                            materials = get_materials()
+                            material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
+                        else:
+                            st.error("添加材料失败，可能是材料已存在")
+
+        with tab2:
+            st.write("删除基体材料")
+            if not materials:
+                st.warning("没有可删除的材料数据")
+            else:
+                material_list = [f"{m[0]}: {m[1]} ({m[2]}) - {m[3]}" for m in materials]
+                selected_material = st.selectbox(
+                    "选择要删除的材料",
+                    options=material_list,
+                    key="delete_material_select"
+                )
+
+                # 获取选择的材料ID
+                selected_id = int(selected_material.split(":")[0])
+
+                if st.button("删除", key="delete_material_button"):
+                    success, message = delete_material(selected_id)
+                    if success:
+                        st.success(message)
+                        # 刷新材料列表
+                        materials = get_materials()
+                        material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
+                    else:
+                        st.error(message)
+
     if choice == "添加新设计":
         st.subheader("添加新的复合材料电磁屏蔽设计")
-
         test_id = st.text_input("试验件编号*", key="add_test_id")
-        # 基体材料选择
-        selected_material_name = st.selectbox(
-            "复合材料的基体*",
-            options=list(material_options.keys()),
-            key="add_base_material"
-        )
-        base_material_id = material_options[selected_material_name]
 
         # 结构形式选择
         structure_type = st.selectbox(
@@ -231,7 +293,7 @@ def main():
             with cols[0]:
                 material = st.selectbox(
                     f"材料类型",
-                    options=list(material_options.keys()),###[m[1] for m in materials],
+                    options=list(material_options.keys()),
                     key=f"add_mat_{i}"
                 )
             with cols[1]:
@@ -311,7 +373,7 @@ def main():
 
                 # 添加到数据库
                 if add_shielding_design(
-                        test_id, base_material_id, structure_type,
+                        test_id, structure_type,
                         thickness_summary, layer_details,
                         shielding_material, shielding_data, dielectric_data
                 ):
@@ -338,21 +400,11 @@ def main():
             if selected_test_id:
                 design = design_options[selected_test_id]
 
-                # 基体材料选择
-                current_material = f"{design[1]} ({design[2]})"
-                selected_material_name = st.selectbox(
-                    "复合材料的基体*",
-                    options=list(material_options.keys()),
-                    index=list(material_options.keys()).index(current_material),
-                    key="modify_base_material"
-                )
-                base_material_id = material_options[selected_material_name]
-
                 # 结构形式选择
                 structure_type = st.selectbox(
                     "结构形式*",
                     options=structure_types,
-                    index=structure_types.index(design[5]),
+                    index=structure_types.index(design[1]),
                     key="modify_structure_type"
                 )
 
@@ -360,7 +412,7 @@ def main():
                 st.subheader("铺层参数修改")
 
                 # 解析原有的铺层详情
-                layer_descriptions = design[7].split('\n') if design[7] else []
+                layer_descriptions = design[3].split('\n') if design[3] else []
                 initial_layer_count = len(layer_descriptions)
 
                 layer_count = st.number_input(
@@ -396,9 +448,8 @@ def main():
                     with cols[0]:
                         material = st.selectbox(
                             f"材料类型",
-                            options=[m[1] for m in materials],
-                            index=[m[1] for m in materials].index(default_mat) if default_mat in [m[1] for m in
-                                                                                                  materials] else 0,
+                            options=list(material_options.keys()),
+                            index=list(material_options.keys()).index(default_mat) if default_mat in list(material_options.keys()) else 0,
                             key=f"modify_mat_{i}"
                         )
                     with cols[1]:
@@ -428,7 +479,7 @@ def main():
                 # 厚度汇总
                 thickness_summary = st.text_input(
                     "厚度汇总描述*",
-                    value=design[6],
+                    value=design[2],
                     key="modify_thickness_summary"
                 )
 
@@ -436,13 +487,13 @@ def main():
                 shielding_material = st.selectbox(
                     "屏蔽防护材料*",
                     options=shielding_materials,
-                    index=shielding_materials.index(design[8]),
+                    index=shielding_materials.index(design[4]),
                     key="modify_shielding_material"
                 )
 
                 # 显示当前屏蔽效能数据
                 st.markdown("**当前屏蔽效能数据**")
-                shielding_df = pd.read_csv(StringIO(design[9]), sep="\s+", header=None, names=["频率", "屏蔽效能"])
+                shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None, names=["频率", "屏蔽效能"])
                 st.dataframe(shielding_df)
 
                 # 屏蔽效能数据上传
@@ -455,7 +506,7 @@ def main():
 
                 # 显示当前介电常数数据
                 st.markdown("**当前介电常数数据**")
-                dielectric_df = pd.read_csv(StringIO(design[10]), sep="\s+", header=None, names=["频率", "实部", "虚部"])
+                dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None, names=["频率", "实部", "虚部"])
                 st.dataframe(dielectric_df)
 
                 # 介电常数数据上传
@@ -474,12 +525,12 @@ def main():
                             for layer in layers])
 
                     # 使用新数据或保留原数据
-                    new_shielding_data = shielding_file.getvalue().decode("utf-8") if shielding_file else design[9]
-                    new_dielectric_data = dielectric_file.getvalue().decode("utf-8") if dielectric_file else design[10]
+                    new_shielding_data = shielding_file.getvalue().decode("utf-8") if shielding_file else design[5]
+                    new_dielectric_data = dielectric_file.getvalue().decode("utf-8") if dielectric_file else design[6]
 
                     # 更新数据库
                     update_shielding_design(
-                        selected_test_id, base_material_id, structure_type,
+                        selected_test_id, structure_type,
                         thickness_summary, layer_details,
                         shielding_material, new_shielding_data, new_dielectric_data
                     )
@@ -506,10 +557,9 @@ def main():
 
                 st.warning("以下设计将被删除，此操作不可恢复！")
                 st.write(f"试验件编号: {design[0]}")
-                st.write(f"基体材料: {design[1]} ({design[2]})")
-                st.write(f"结构形式: {design[5]}")
-                st.write(f"厚度: {design[6]}")
-                st.write(f"屏蔽防护材料: {design[8]}")
+                st.write(f"结构形式: {design[1]}")
+                st.write(f"厚度: {design[2]}")
+                st.write(f"屏蔽防护材料: {design[4]}")
 
                 if st.button("确认删除"):
                     delete_shielding_design(selected_test_id)
@@ -520,18 +570,18 @@ def main():
         with st.form("search_form"):
             col1, col2 = st.columns(2)
             with col1:
-                # 基体材料筛选
-                base_material_filter = st.selectbox(
-                    "基体材料",
-                    options=[""] + list(set([m[1] for m in materials])),
-                    key="search_base_material"
-                )
-
                 # 结构形式筛选
                 structure_type_filter = st.selectbox(
                     "结构形式",
                     options=[""] + structure_types,
                     key="search_structure_type"
+                )
+
+                # 基体材料筛选（暂时弃用，因为一个结构件可能存在多个）
+                basematerial_type_filter = st.selectbox(
+                    "基体材料",
+                    options=[""] + materials,
+                    key="search_basematerial_type"
                 )
 
             with col2:
@@ -553,7 +603,6 @@ def main():
         if submitted:
             # 执行查询
             designs = get_shielding_designs(
-                base_material=base_material_filter if base_material_filter else None,
                 structure_type=structure_type_filter if structure_type_filter else None,
                 thickness=thickness_filter if thickness_filter else None,
                 shielding_material=shielding_material_filter if shielding_material_filter else None
@@ -577,14 +626,11 @@ def main():
                 for design in designs:
                     summary_data.append({
                         "试验件编号": design[0],
-                        "基体材料": f"{design[1]} ({design[2]})",
-                        "供应商": design[3],
-                        "标准": design[4],
-                        "结构形式": design[5],
-                        "厚度": design[6],
-                        "屏蔽防护材料": design[8],
-                        "创建时间": design[11],
-                        "更新时间": design[12]
+                        "结构形式": design[1],
+                        "厚度": design[2],
+                        "屏蔽防护材料": design[4],
+                        "创建时间": design[7],
+                        "更新时间": design[8]
                     })
                 st.dataframe(pd.DataFrame(summary_data))
 
@@ -618,7 +664,7 @@ def main():
                     for design in selected_design:
                         # 屏蔽效能数据
                         try:
-                            shielding_df = pd.read_csv(StringIO(design[9]), sep="\s+", header=None,
+                            shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None,
                                                        names=["频率", "屏蔽效能"])
                             shielding_df.to_excel(writer, sheet_name=f"{design[0]}_屏蔽效能", index=False)
                         except:
@@ -626,7 +672,7 @@ def main():
 
                         # 介电常数数据
                         try:
-                            dielectric_df = pd.read_csv(StringIO(design[10]), sep="\s+", header=None,
+                            dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None,
                                                         names=["频率", "实部", "虚部"])
                             dielectric_df.to_excel(writer, sheet_name=f"{design[0]}_介电常数", index=False)
                         except:
@@ -649,29 +695,25 @@ def main():
 
                         with col1:
                             st.write(f"**试验件编号**: {design[0]}")
-                            st.write(f"**基体材料**: {design[1]}")
-                            st.write(f"**牌号**: {design[2]}")
-                            st.write(f"**供应商**: {design[3]}")
-                            st.write(f"**标准**: {design[4]}")
+                            st.write(f"**结构形式**: {design[1]}")
+                            st.write(f"**厚度汇总**: {design[2]}")
 
                         with col2:
-                            st.write(f"**结构形式**: {design[5]}")
-                            st.write(f"**厚度汇总**: {design[6]}")
-                            st.write(f"**屏蔽防护材料**: {design[8]}")
-                            st.write(f"**创建时间**: {design[11]}")
-                            st.write(f"**更新时间**: {design[12]}")
+                            st.write(f"**屏蔽防护材料**: {design[4]}")
+                            st.write(f"**创建时间**: {design[7]}")
+                            st.write(f"**更新时间**: {design[8]}")
 
                         # 显示铺层详情
                         st.subheader("铺层详情")
-                        if design[7]:
-                            st.text(design[7])
+                        if design[3]:
+                            st.text(design[3])
                         else:
                             st.warning("无铺层详情数据")
 
                         # 显示屏蔽效能数据
                         st.subheader("屏蔽效能数据")
                         try:
-                            shielding_df = pd.read_csv(StringIO(design[9]), sep="\s+", header=None,
+                            shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None,
                                                        names=["频率", "屏蔽效能"])
                             st.dataframe(shielding_df)
                             st.line_chart(shielding_df.set_index("频率"))
@@ -681,7 +723,7 @@ def main():
                         # 显示介电常数数据
                         st.subheader("介电常数数据")
                         try:
-                            dielectric_df = pd.read_csv(StringIO(design[10]), sep="\s+", header=None,
+                            dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None,
                                                         names=["频率", "实部", "虚部"])
                             st.dataframe(dielectric_df)
                             col1, col2 = st.columns(2)

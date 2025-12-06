@@ -43,7 +43,7 @@ else:
 st.markdown(logo_html, unsafe_allow_html=True)
 
 # 设置网页标题
-st.title('环境效应仿真支持平台V0.1')
+st.title('电磁环境效应仿真支持平台V1.0')
 # 展示一级标题
 st.header('1. 场路转化说明')
 st.text('本仿真平台支持将电磁场仿真得到的电磁数据利用矢量拟合等方法转化为时域电路模型，'
@@ -53,7 +53,7 @@ st.text('本仿真平台支持将电磁场仿真得到的电磁数据利用矢�
 ####1. 定义一个文件长传按钮，支持的类型暂定为txt，xls以及csv三种类型
 is_data_ready = 0###定义一个标志状态，0表示阻抗数据没有准备好，1表示数据准备好，可以进行转换
 uploaded_file_set=[]
-uploaded_file_set = st.file_uploader("选择文件:", type=["txt",  "ztm"], accept_multiple_files=True)
+uploaded_file_set = st.file_uploader("选择文件:", type=["txt",  "ztm", "sparameters"], accept_multiple_files=True)
 spice_model_path = st.text_input('请输入spice模型文件存储路径（可以不设置，默认为当前工程目录）', max_chars=100, help='最大长度为100字符')
 # 检查路径是否为空
 if spice_model_path:
@@ -95,7 +95,13 @@ if len(uploaded_file_set) > 3:
                 result_data,fre_data = wyz_io.read_matrix_from_txt(ztm_file)
                 Z_f_n_n_list.append(result_data)
                 fre_list.append(fre_data)
-                ceshi = 1
+                inut_file_type = 1
+            case ".sparameters":
+                ztm_file = uploaded_file  # "E:\公司工作（低空防御）\场路仿真\场路转换算法\Composite_ZCM_3\Composite_ZCM_Configuration.xml"
+                result_data, fre_data = wyz_io.read_matrix_from_txt(ztm_file)
+                Z_f_n_n_list.append(result_data)
+                fre_list.append(fre_data)
+                inut_file_type = 2
 
             case _:
                 print("文件格式错误")
@@ -225,7 +231,10 @@ with tab1:
         if is_data_ready == 0:
             st.text("请输入阻抗数据")
         else:
-            ntw = rf.Network(frequency=np.array(frequency_ordered) * 1e6, z=Z_fnn_matrix)
+            if inut_file_type==1:
+                ntw = rf.Network(frequency=np.array(frequency_ordered) * 1e6, z=Z_fnn_matrix)
+            else:
+                ntw = rf.Network(frequency=np.array(frequency_ordered) * 1e6, s=Z_fnn_matrix)
             # ntw2 = rf.Network.from_z(Z_fnn_matrix,f=np.array(frequency_ordered) * 1e6)
             s_parameters = ntw.s
             # print(ntw)
@@ -248,14 +257,17 @@ with tab1:
             # vf.plot_convergence()
             # vf.passivity_enforce()  # won't do anything if model is already passive
             vf.write_spice_subcircuit_s('wyz2.sp')
-            spice_content = vf.generate_spice_subcircuit_s()
+            spice_content = vf.generate_spice_subcircuit_s2()
+            wyz_wucha = vf.get_rms_error(parameter_type='s')
             if compare_flag_on:
                 frequecy_fit = np.linspace(0, frequency_ordered[-1]*1e6, len(frequency_ordered)*10)###单位是Mhz
                 fit_data = vf.get_model_response(0, 0, frequecy_fit)
+
+                Zij = fit_data;###50*(1+fit_data)/(1-fit_data)
                 # 正确的方式：先创建figure和axes
                 fig, ax = plt.subplots()
                 # 绘制拟合结果
-                ax.plot(frequecy_fit / 1e6, np.abs(fit_data), label='Fitted Model')  # 转换为MHz单位
+                ax.plot(frequecy_fit / 1e6, np.abs(Zij), label='Fitted Model')  # 转换为MHz单位
                 # 绘制原始S参数（假设绘制S11）
                 s11 = ntw.s[:, 0, 0]  # 获取S11参数
                 ax.plot(frequency_ordered, np.abs(s11), 'o', label='Original Data')  # 绘制幅度
@@ -265,7 +277,11 @@ with tab1:
                 ax.set_title('Model Response')
                 ax.legend()
                 ax.grid(True)
+                # 设置x轴和y轴的显示范围
+                #ax.set_xlim(0, 0.01)  # x轴范围：0 MHz 到 1000 MHz
+                #ax.set_ylim(0, 0.2)  # y轴范围：0 到 1.2（假设幅度在0~1之间）
                 st.pyplot(fig)
+
     # 将列表转换为字符串
     spice_content_str = spice_content
     # 选择存储方式
@@ -375,7 +391,7 @@ with tab2:
             fit_data = vf.get_model_response(0, 0, frequecy_fit)
 
             vf.write_spice_subcircuit_s('wyz2.cir')
-            spice_content = vf.generate_spice_subcircuit_s()
+            spice_content = vf.generate_spice_subcircuit_s2()
     # 将列表转换为字符串
     spice_content_str = spice_content
     # 选择存储方式

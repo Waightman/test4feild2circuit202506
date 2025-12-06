@@ -2450,7 +2450,7 @@ class VectorFitting:
         """
         Generates an equivalent N-port subcircuit based on its vector fitted S parameter responses
         in spice simulator netlist syntax and returns the content as a string.
-
+        wyz
         Parameters
         ----------
         fitted_model_name: str
@@ -2587,3 +2587,766 @@ class VectorFitting:
         content.append('.ENDS rl_admittance\n\n')
 
         return ''.join(content)
+
+    def generate_spice_subcircuit_s4pspice(self, fitted_model_name: str = "s_equivalent",
+                                    create_reference_pins: bool = False) -> str:
+        """
+        Generates an equivalent N-port subcircuit based on its vector fitted S parameter responses
+        in PSpice simulator netlist syntax and returns the content as a string.
+
+        Parameters
+        ----------
+        fitted_model_name: str
+            Name of the resulting model, default "s_equivalent"
+
+        create_reference_pins: bool
+            If set to True, the synthesized subcircuit will have N pin-pairs:
+            P0, P0_reference, ..., PN, PN_reference
+
+            If set to False, the synthesized subcircuit will have N pins
+            P0, ..., PN
+            In this case, the reference nodes will be internally connected
+            to the global ground net 0.
+
+            The default is False
+
+        Returns
+        -------
+        str
+            The content of the PSpice subcircuit file as a string.
+        """
+        content = []
+
+        # List of subcircuits for the equivalent admittances
+        subcircuits = []
+
+        # Provides a unique subcircuit identifier (X1, X2, X3, ...)
+        def get_new_subckt_identifier():
+            subcircuits.append(f'X{len(subcircuits) + 1}')
+            return subcircuits[-1]
+
+        # write title line
+        content.append('* EQUIVALENT CIRCUIT FOR VECTOR FITTED S-MATRIX\n')
+        content.append('* Created wyz\n')
+        content.append('* Modified for PSpice compatibility - No floating nodes\n\n')
+
+        # Create subcircuit pin string and reference nodes
+        if create_reference_pins:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1} r{x + 1}', range(self.network.nports)))
+            ref_nodes = list(map(lambda x: f'r{x + 1}', range(self.network.nports)))
+        else:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1}', range(self.network.nports)))
+            ref_nodes = list(map(lambda x: '0', range(self.network.nports)))
+
+        # PSpice兼容的子电路定义
+        content.append(f'.SUBCKT {fitted_model_name} {str_input_nodes}\n')
+
+        for n in range(self.network.nports):
+            content.append(f'\n* Port network for port {n + 1}\n')
+
+            # Calculate sqrt of Z0 for port current port
+            sqrt_Z0_n = np.sqrt(np.real(self.network.z0[0, n]))
+
+            # Port reference impedance Z0
+            content.append(f'R_ref_{n + 1} p{n + 1} a{n + 1} {np.real(self.network.z0[0, n])}\n')
+
+            # 电流传感器 - 使用0V电压源测量电流
+            content.append(f'V_c_{n + 1} nt_c_{n + 1} {ref_nodes[n]} 0\n')
+
+            # 简化方案：直接使用VCVS，避免浮空节点
+            # 使用电压控制电压源直接实现功能，避免中间节点
+            content.append(f'E_b_{n + 1} a{n + 1} {ref_nodes[n]} VALUE {{ I(V_c_{n + 1}) * {2.0 * sqrt_Z0_n} }}\n')
+
+            content.append(f'* Differential incident wave a sources for transfer from port {n + 1}\n')
+
+            # 使用VALUE表达式避免浮空节点
+            content.append(f'E_h_{n + 1} nt_p_{n + 1} nts_p_{n + 1} VALUE {{ V(a{n + 1}) * {0.5 * sqrt_Z0_n} }}\n')
+
+            # E源 - 电压控制电压源（入射波a）
+            content.append(
+                f'E_p_{n + 1} nts_p_{n + 1} {ref_nodes[n]} p{n + 1} {ref_nodes[n]} {1.0 / (2.0 * sqrt_Z0_n)}\n')
+
+            # E源 - 电压控制电压源（反相，-a）
+            content.append(f'E_n_{n + 1} {ref_nodes[n]} nt_n_{n + 1} VALUE {{ -V(nt_p_{n + 1}) }}\n')
+
+            # 为所有关键节点添加高阻值电阻到地，避免浮空
+            content.append(f'R_float_p_{n + 1} nt_p_{n + 1} {ref_nodes[n]} 1e12\n')
+            content.append(f'R_float_n_{n + 1} nt_n_{n + 1} {ref_nodes[n]} 1e12\n')
+            content.append(f'R_float_nts_{n + 1} nts_p_{n + 1} {ref_nodes[n]} 1e12\n')
+            content.append(f'R_float_a_{n + 1} a{n + 1} {ref_nodes[n]} 1e12\n')
+
+            content.append(f'* Current sensor on center node for transfer to port {n + 1}\n')
+
+            for j in range(self.network.nports):
+                content.append(f'* Transfer network from port {j + 1} to port {n + 1}\n')
+
+                # Stacking order in VectorFitting class variables:
+                # s11, s12, s13, ..., s21, s22, s23, ...
+                i_response = n * self.network.nports + j
+
+                # Start with proportional and constant term of the model
+                g = self.constant_coeff[i_response]
+                c = self.proportional_coeff[i_response]
+
+                # R for constant term
+                if g < 0:
+                    content.append(f'R{n + 1}_{j + 1} nt_n_{j + 1} nt_c_{n + 1} {np.abs(1 / g)}\n')
+                elif g > 0:
+                    content.append(f'R{n + 1}_{j + 1} nt_p_{j + 1} nt_c_{n + 1} {1 / g}\n')
+
+                # C for proportional term
+                if c < 0:
+                    content.append(f'C{n + 1}_{j + 1} nt_n_{j + 1} nt_c_{n + 1} {np.abs(c)}\n')
+                elif c > 0:
+                    content.append(f'C{n + 1}_{j + 1} nt_p_{j + 1} nt_c_{n + 1} {c}\n')
+
+                # 为传输网络节点添加防浮空电阻
+                content.append(f'R_float_ntc_{n + 1}_{j + 1} nt_c_{n + 1} {ref_nodes[n]} 1e12\n')
+
+                # Transfer admittances represented by poles and residues
+                for i_pole in range(len(self.poles)):
+                    pole = self.poles[i_pole]
+                    residue = self.residues[i_response, i_pole]
+                    node = get_new_subckt_identifier()
+
+                    if np.real(residue) < 0.0:
+                        residue = -1 * residue
+                        node += f' nt_n_{j + 1} nt_c_{n + 1}'
+                    else:
+                        node += f' nt_p_{j + 1} nt_c_{n + 1}'
+
+                    if np.imag(pole) == 0.0:
+                        # Real pole; Add rl_admittance
+                        l = 1 / np.real(residue)
+                        r = -1 * np.real(pole) / np.real(residue)
+                        # PSpice兼容：添加PARAMS:关键字
+                        content.append(node + f' rl_admittance PARAMS: res={r} ind={l}\n')
+                    else:
+                        # Complex pole of a conjugate pair; Add rcl_vccs_admittance
+                        r = -1 * np.real(pole) / np.real(residue)
+                        c_val = 2 * np.real(residue) / (np.abs(pole) ** 2)
+                        l = 1 / (2 * np.real(residue))
+                        b = -2 * (np.real(residue) * np.real(pole) + np.imag(residue) * np.imag(pole))
+                        gm = b * l * c_val
+                        # PSpice兼容：添加PARAMS:关键字
+                        content.append(node + f' rcl_vccs_admittance PARAMS: res={r} cap={c_val} ind={l} gm={gm}\n')
+
+        content.append(f'.ENDS {fitted_model_name}\n\n')
+
+        # 在文件开头添加PSpice选项，帮助解决收敛问题
+        header = [
+            '* PSpice Options for Better Convergence\n',
+            '.OPTIONS ABSTOL=1p RELTOL=0.01 VNTOL=1u ITL1=500 ITL2=500\n',
+            '.OPTIONS GMIN=1e-12\n\n'
+        ]
+
+        # Subcircuit for an RLCG equivalent admittance of a complex-conjugate pole-residue pair
+        content.append('.SUBCKT rcl_vccs_admittance n_pos n_neg PARAMS: res=1e3 cap=1e-9 ind=100e-12 gm=1e-3\n')
+        content.append('L1 n_pos 1 {ind}\n')
+        content.append('C1 1 2 {cap}\n')
+        content.append('R1 2 n_neg {res}\n')
+        content.append('G1 n_pos n_neg 1 2 {gm}\n')
+        # 为子电路内部节点添加防浮空电阻
+        content.append('R_float_1 1 n_neg 1e12\n')
+        content.append('R_float_2 2 n_neg 1e12\n')
+        content.append('.ENDS rcl_vccs_admittance\n\n')
+
+        # Subcircuit for an RL equivalent admittance of a real pole-residue pair
+        content.append('.SUBCKT rl_admittance n_pos n_neg PARAMS: res=1e3 ind=100e-12\n')
+        content.append('L1 n_pos 1 {ind}\n')
+        content.append('R1 1 n_neg {res}\n')
+        # 为子电路内部节点添加防浮空电阻
+        content.append('R_float_1 1 n_neg 1e12\n')
+        content.append('.ENDS rl_admittance\n\n')
+
+        return ''.join(header) + ''.join(content)
+
+
+    def write_spice_subcircuit_s2(self, file: str, fitted_model_name: str = "s_equivalent",
+                                     create_reference_pins: bool = False) -> None:
+        """
+        Creates an equivalent N-port subcircuit based on its vector fitted scattering (S) parameter responses
+        in spice simulator netlist syntax (compatible with LTspice, ngspice, Xyce, ...). The circuit synthesis is based
+        on a direct implementation of the state-space representation of the vector fitted model [#vf-book]_.
+        这个是新版本
+        Parameters
+        ----------
+        file : str
+            Path and filename including file extension (usually .sp) for the subcircuit file.
+
+        fitted_model_name: str
+            Name of the resulting subcircuit, default "s_equivalent"
+
+        create_reference_pins: bool
+            If set to True, the synthesized subcircuit will have N pin-pairs:
+            p1 p1_ref p2 p2_ref ... pN pN_ref
+
+            If set to False, the synthesized subcircuit will have N pins
+            p1 p2 ... pN
+            In this case, the reference nodes will be internally connected
+            to the global ground net 0.
+
+            The default is False
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        Load and fit the `Network`, then export the equivalent subcircuit:
+
+        >>> nw_3port = skrf.Network('my3port.s3p')
+        >>> vf = skrf.VectorFitting(nw_3port)
+        >>> vf.auto_fit()
+        >>> vf.write_spice_subcircuit_s('/my3port_model.sp')
+
+        References
+        ----------
+        .. [#vf-book] S. Grivet-Talocia and B. Gustavsen, "Passive Macromodeling", Wiley, 2016,
+            doi: https://doi.org/10.1002/9781119140931
+
+        """
+
+        if np.any(self.proportional_coeff):
+            build_e = True
+        else:
+            build_e = False
+
+        with open(file, 'w') as f:
+            # write title line
+            f.write('* EQUIVALENT CIRCUIT FOR VECTOR FITTED\n')
+            f.write('* Created by wyz\n')
+            f.write('*\n')
+
+            # Create subcircuit pin string and reference nodes
+            if create_reference_pins:
+                str_input_nodes = " ".join(map(lambda x: f'p{x + 1} p{x + 1}_ref', range(self.network.nports)))
+            else:
+                str_input_nodes = " ".join(map(lambda x: f'p{x + 1}', range(self.network.nports)))
+
+            f.write(f'.SUBCKT {fitted_model_name} {str_input_nodes}\n')
+
+            for i in range(self.network.nports):
+                f.write('*\n')
+                f.write(f'* Port network for port {i + 1}\n')
+
+                if create_reference_pins:
+                    node_ref_i = f'p{i + 1}_ref'
+                else:
+                    node_ref_i = '0'
+
+                # reference impedance (real, i.e. resistance) of port i
+                z0_i = np.real(self.network.z0[0, i])
+
+                # transfer gain of the controlled current sources representing the incident power wave a_i at port i
+                #
+                # the gain values result from the definition of the incident power wave:
+                # a_i = 1 / 2 / sqrt(Z0_i) * (V_i + Z0_i * I_i) = 1 / 2 / sqrt(Z0_i) * V_i + sqrt(Z0_i) / 2 * I_i
+                gain_vccs_a_i = 1 / 2 / np.sqrt(z0_i)
+                gain_cccs_a_i = np.sqrt(z0_i) / 2
+
+                # transfer gain of the controlled current source representing the reflected power wave b_i at port i
+                #
+                # the gain values result from the definition of the reflected power wave:
+                # b_i = 1 / 2 / sqrt(Z0_i) * (V_i - Z0_i * I_i)
+                #
+                # depending on the circuit topology used for the equivalent port network, this can be implemented
+                # with either controlled current and/or controlled voltage sources. in case of the Norton current
+                # source used in this implementation, the reflected power wave relates to the source current as:
+                # b_i = sqrt(Z0_i) / 2 * I_b_i <==> I_b_i = 2 / sqrt(Z0_i) * b_i
+                gain_b_i = 2 / np.sqrt(z0_i)
+
+                # dummy voltage source (v = 0) for port current sensing (I_i)
+                f.write(f'V{i + 1} p{i + 1} s{i + 1} 0\n')
+
+                # adding port reference resistor Ri = Z0_i
+                f.write(f'R{i + 1} s{i + 1} {node_ref_i} {z0_i}\n')
+
+                # transfer of states and inputs from port j to input/output network of port i
+                for j in range(self.network.nports):
+                    if create_reference_pins:
+                        node_ref_j = f'p{j + 1}_ref'
+                    else:
+                        node_ref_j = '0'
+
+                    # reference impedance (real, i.e. resistance) of port i
+                    z0_j = np.real(self.network.z0[0, j])
+
+                    # Stacking order in VectorFitting class variables:
+                    # s11, s12, s13, ..., s21, s22, s23, ...
+                    idx_S_i_j = i * self.network.nports + j
+
+                    # VCCS and CCCS adding their currents to represent the incident wave a_j
+                    gain_vccs_a_j = 1 / 2 / np.sqrt(z0_j)
+                    gain_cccs_a_j = np.sqrt(z0_j) / 2
+
+                    d = self.constant_coeff[idx_S_i_j]
+                    e = self.proportional_coeff[idx_S_i_j]
+
+                    if d != 0.0:
+                        # avoid zero-valued coefficients (in case of fit_constant=False)
+
+                        # input a_j is scaled by constant term d_i_j and by current gain for b_i
+                        g_ij = gain_b_i * d * gain_vccs_a_j
+                        f_ij = gain_b_i * d * gain_cccs_a_j
+                        f.write(f'Gd{i + 1}_{j + 1} {node_ref_i} s{i + 1} p{j + 1} {node_ref_j} {g_ij}\n')
+                        f.write(f'Fd{i + 1}_{j + 1} {node_ref_i} s{i + 1} V{j + 1} {f_ij}\n')
+
+                    if build_e and e != 0.0:
+                        # avoid zero-valued coefficients (in case of fit_proportional=False)
+                        # proportional coefficients require an extra node for the differentiation using an inductor
+                        # [Y(s) ~ s * E * U(s)]
+
+                        # differentiated input a_j is scaled by proportional term e_i_j and by current gain for b_i
+                        g_ij = gain_b_i * e
+                        f.write(f'Ge{i + 1}_{j + 1} {node_ref_i} s{i + 1} e{j + 1} 0 {g_ij}\n')
+
+                    # each residue rk_i_j at port i is multiplied by its respective state signal xk_j
+                    for k in range(len(self.poles)):
+                        pole = self.poles[k]
+                        residue = self.residues[idx_S_i_j, k]
+                        g_re = gain_b_i * np.real(residue)
+                        g_im = gain_b_i * np.imag(residue)
+
+                        if np.imag(pole) == 0.0:
+                            # Real pole/residue pair; represented by one state
+                            xkj = f'x{k + 1}_a{j + 1}'
+                            f.write(f'Gr{k + 1}_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xkj} 0 {g_re}\n')
+                        else:
+                            # Complex-conjugate pole/residue pair; represented by two states
+                            # real part at x_{k + 1}_re_{j + 1}
+                            # imaginary part at x_{k + 1}_im_{j + 1}
+                            xk_re_j = f'x{k + 1}_re_a{j + 1}'
+                            xk_im_j = f'x{k + 1}_im_a{j + 1}'
+                            f.write(f'Gr{k + 1}_re_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xk_re_j} 0 {g_re}\n')
+                            f.write(f'Gr{k + 1}_im_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xk_im_j} 0 {g_im}\n')
+
+                # create state networks driven by this port i (input variable u = a_i)
+                f.write('*\n')
+                f.write(f'* State networks driven by port {i + 1}\n')
+                for k in range(len(self.poles)):
+                    pole = self.poles[k]
+                    pole_re = np.real(pole)
+                    pole_im = np.imag(pole)
+
+                    # Transfer of input (a_i) to state networks (node xk_i) using VCCS and CCCS
+                    if pole_im == 0.0:
+                        # Real pole; represented by one state, input a_i is scaled by b = 1
+                        xki = f'x{k + 1}_a{i + 1}'
+                        f.write(f'Cx{k + 1}_a{i + 1} {xki} 0 1.0\n')  # 1F capacitor makes math easy
+                        f.write(f'Gx{k + 1}_a{i + 1} 0 {xki} p{i + 1} {node_ref_i} {1 * gain_vccs_a_i}\n')
+                        f.write(f'Fx{k + 1}_a{i + 1} 0 {xki} V{i + 1} {1 * gain_cccs_a_i}\n')
+                        f.write(f'Rp{k + 1}_a{i + 1} 0 {xki} {-1 / pole_re}\n')
+                    else:
+                        # Complex pole of a conjugate pair; represented by two states
+                        # real part at x_{k + 1}_re_{i + 1}, input a_i is scaled by b = 2
+                        xk_re_i = f'x{k + 1}_re_a{i + 1}'
+                        xk_im_i = f'x{k + 1}_im_a{i + 1}'
+                        f.write(f'Cx{k + 1}_re_a{i + 1} {xk_re_i} 0 1.0\n')  # 1F capacitor makes math easy
+                        f.write(
+                            f'Gx{k + 1}_re_a{i + 1} 0 {xk_re_i} p{i + 1} {node_ref_i} {2 * gain_vccs_a_i}\n')
+                        f.write(f'Fx{k + 1}_re_a{i + 1} 0 {xk_re_i} V{i + 1} {2 * gain_cccs_a_i}\n')
+                        f.write(f'Rp{k + 1}_re_re_a{i + 1} 0 {xk_re_i} {-1 / pole_re}\n')
+                        f.write(f'Gp{k + 1}_re_im_a{i + 1} 0 {xk_re_i} {xk_im_i} 0 {pole_im}\n')
+
+                        # imaginary part at x_{k + 1}_im_{i + 1}, input a_i is inactive (b = 0)
+                        f.write(f'Cx{k + 1}_im_a{i + 1} {xk_im_i} 0 1.0\n')  # 1F capacitor makes math easy
+                        f.write(f'Gp{k + 1}_im_re_a{i + 1} 0 {xk_im_i} {xk_re_i} 0 {-1 * pole_im}\n')
+                        f.write(f'Rp{k + 1}_im_im_a{i + 1} 0 {xk_im_i} {-1 / pole_re}\n')
+
+                # create differentiation network for this port i (input variable u = a_i)
+                if build_e:
+                    f.write('*\n')
+                    f.write(f'* Network with derivative of input a_{i + 1} for proportional term\n')
+                    # voltage on node 'e{i + 1}' to gnd (0) represents time-derivative of input a_i for terms e_j_i
+                    f.write(f'Le{i + 1} e{i + 1} 0 1.0\n')  # 1H inductor makes math easy
+                    f.write(f'Ge{i + 1} 0 e{i + 1} p{i + 1} {node_ref_i} {gain_vccs_a_i}\n')
+                    f.write(f'Fe{i + 1} 0 e{i + 1} V{i + 1} {gain_cccs_a_i}\n')
+
+            f.write(f'.ENDS {fitted_model_name}\n')
+
+    def generate_spice_subcircuit_s2(self, file: str = None, fitted_model_name: str = "s_equivalent",
+                                     create_reference_pins: bool = False) -> str:
+        """
+        Creates an equivalent N-port subcircuit based on its vector fitted scattering (S) parameter responses
+        in spice simulator netlist syntax (compatible with LTspice, ngspice, Xyce, ...). The circuit synthesis is based
+        on a direct implementation of the state-space representation of the vector fitted model [#vf-book]_.
+
+        Parameters
+        ----------
+        file : str, optional
+            Path and filename including file extension (usually .sp) for the subcircuit file.
+            If provided, the netlist will be written to this file. If None, only returns the string.
+
+        fitted_model_name: str
+            Name of the resulting subcircuit, default "s_equivalent"
+
+        create_reference_pins: bool
+            If set to True, the synthesized subcircuit will have N pin-pairs:
+            p1 p1_ref p2 p2_ref ... pN pN_ref
+
+            If set to False, the synthesized subcircuit will have N pins
+            p1 p2 ... pN
+            In this case, the reference nodes will be internally connected
+            to the global ground net 0.
+
+            The default is False
+
+        Returns
+        -------
+        str
+            The complete SPICE netlist as a string
+
+        Examples
+        --------
+        Load and fit the `Network`, then export the equivalent subcircuit:
+
+        >>> nw_3port = skrf.Network('my3port.s3p')
+        >>> vf = skrf.VectorFitting(nw_3port)
+        >>> vf.auto_fit()
+        >>> spice_netlist = vf.write_spice_subcircuit_s2()
+        >>> # Or to write to file:
+        >>> vf.write_spice_subcircuit_s2('/my3port_model.sp')
+
+        References
+        ----------
+        .. [#vf-book] S. Grivet-Talocia and B. Gustavsen, "Passive Macromodeling", Wiley, 2016,
+            doi: 链接
+
+        """
+
+        if np.any(self.proportional_coeff):
+            build_e = True
+        else:
+            build_e = False
+
+        # Build the netlist content as a string
+        lines = []
+
+        # write title line
+        lines.append('* EQUIVALENT CIRCUIT FOR VECTOR FITTED S-MATRIX')
+        lines.append('* Created by wyz.py')
+        lines.append('*')
+
+        # Create subcircuit pin string and reference nodes
+        if create_reference_pins:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1} p{x + 1}_ref', range(self.network.nports)))
+        else:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1}', range(self.network.nports)))
+
+        lines.append(f'.SUBCKT {fitted_model_name} {str_input_nodes}')
+
+        for i in range(self.network.nports):
+            lines.append('*')
+            lines.append(f'* Port network for port {i + 1}')
+
+            if create_reference_pins:
+                node_ref_i = f'p{i + 1}_ref'
+            else:
+                node_ref_i = '0'
+
+            # reference impedance (real, i.e. resistance) of port i
+            z0_i = np.real(self.network.z0[0, i])
+
+            # transfer gain of the controlled current sources representing the incident power wave a_i at port i
+            gain_vccs_a_i = 1 / 2 / np.sqrt(z0_i)
+            gain_cccs_a_i = np.sqrt(z0_i) / 2
+
+            # transfer gain of the controlled current source representing the reflected power wave b_i at port i
+            gain_b_i = 2 / np.sqrt(z0_i)
+
+            # dummy voltage source (v = 0) for port current sensing (I_i)
+            lines.append(f'V{i + 1} p{i + 1} s{i + 1} 0')
+
+            # adding port reference resistor Ri = Z0_i
+            lines.append(f'R{i + 1} s{i + 1} {node_ref_i} {z0_i}')
+
+            # transfer of states and inputs from port j to input/output network of port i
+            for j in range(self.network.nports):
+                if create_reference_pins:
+                    node_ref_j = f'p{j + 1}_ref'
+                else:
+                    node_ref_j = '0'
+
+                # reference impedance (real, i.e. resistance) of port i
+                z0_j = np.real(self.network.z0[0, j])
+
+                # Stacking order in VectorFitting class variables:
+                idx_S_i_j = i * self.network.nports + j
+
+                # VCCS and CCCS adding their currents to represent the incident wave a_j
+                gain_vccs_a_j = 1 / 2 / np.sqrt(z0_j)
+                gain_cccs_a_j = np.sqrt(z0_j) / 2
+
+                d = self.constant_coeff[idx_S_i_j]
+                e = self.proportional_coeff[idx_S_i_j]
+
+                if d != 0.0:
+                    g_ij = gain_b_i * d * gain_vccs_a_j
+                    f_ij = gain_b_i * d * gain_cccs_a_j
+                    lines.append(f'Gd{i + 1}_{j + 1} {node_ref_i} s{i + 1} p{j + 1} {node_ref_j} {g_ij}')
+                    lines.append(f'Fd{i + 1}_{j + 1} {node_ref_i} s{i + 1} V{j + 1} {f_ij}')
+
+                if build_e and e != 0.0:
+                    g_ij = gain_b_i * e
+                    lines.append(f'Ge{i + 1}_{j + 1} {node_ref_i} s{i + 1} e{j + 1} 0 {g_ij}')
+
+                # each residue rk_i_j at port i is multiplied by its respective state signal xk_j
+                for k in range(len(self.poles)):
+                    pole = self.poles[k]
+                    residue = self.residues[idx_S_i_j, k]
+                    g_re = gain_b_i * np.real(residue)
+                    g_im = gain_b_i * np.imag(residue)
+
+                    if np.imag(pole) == 0.0:
+                        xkj = f'x{k + 1}_a{j + 1}'
+                        lines.append(f'Gr{k + 1}_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xkj} 0 {g_re}')
+                    else:
+                        xk_re_j = f'x{k + 1}_re_a{j + 1}'
+                        xk_im_j = f'x{k + 1}_im_a{j + 1}'
+                        lines.append(f'Gr{k + 1}_re_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xk_re_j} 0 {g_re}')
+                        lines.append(f'Gr{k + 1}_im_{i + 1}_{j + 1} {node_ref_i} s{i + 1} {xk_im_j} 0 {g_im}')
+
+            # create state networks driven by this port i (input variable u = a_i)
+            lines.append('*')
+            lines.append(f'* State networks driven by port {i + 1}')
+            for k in range(len(self.poles)):
+                pole = self.poles[k]
+                pole_re = np.real(pole)
+                pole_im = np.imag(pole)
+
+                if pole_im == 0.0:
+                    xki = f'x{k + 1}_a{i + 1}'
+                    lines.append(f'Cx{k + 1}_a{i + 1} {xki} 0 1.0')
+                    lines.append(f'Gx{k + 1}_a{i + 1} 0 {xki} p{i + 1} {node_ref_i} {1 * gain_vccs_a_i}')
+                    lines.append(f'Fx{k + 1}_a{i + 1} 0 {xki} V{i + 1} {1 * gain_cccs_a_i}')
+                    lines.append(f'Rp{k + 1}_a{i + 1} 0 {xki} {-1 / pole_re}')
+                else:
+                    xk_re_i = f'x{k + 1}_re_a{i + 1}'
+                    xk_im_i = f'x{k + 1}_im_a{i + 1}'
+                    lines.append(f'Cx{k + 1}_re_a{i + 1} {xk_re_i} 0 1.0')
+                    lines.append(f'Gx{k + 1}_re_a{i + 1} 0 {xk_re_i} p{i + 1} {node_ref_i} {2 * gain_vccs_a_i}')
+                    lines.append(f'Fx{k + 1}_re_a{i + 1} 0 {xk_re_i} V{i + 1} {2 * gain_cccs_a_i}')
+                    lines.append(f'Rp{k + 1}_re_re_a{i + 1} 0 {xk_re_i} {-1 / pole_re}')
+                    lines.append(f'Gp{k + 1}_re_im_a{i + 1} 0 {xk_re_i} {xk_im_i} 0 {pole_im}')
+
+                    lines.append(f'Cx{k + 1}_im_a{i + 1} {xk_im_i} 0 1.0')
+                    lines.append(f'Gp{k + 1}_im_re_a{i + 1} 0 {xk_im_i} {xk_re_i} 0 {-1 * pole_im}')
+                    lines.append(f'Rp{k + 1}_im_im_a{i + 1} 0 {xk_im_i} {-1 / pole_re}')
+
+            # create differentiation network for this port i (input variable u = a_i)
+            if build_e:
+                lines.append('*')
+                lines.append(f'* Network with derivative of input a_{i + 1} for proportional term')
+                lines.append(f'Le{i + 1} e{i + 1} 0 1.0')
+                lines.append(f'Ge{i + 1} 0 e{i + 1} p{i + 1} {node_ref_i} {gain_vccs_a_i}')
+                lines.append(f'Fe{i + 1} 0 e{i + 1} V{i + 1} {gain_cccs_a_i}')
+
+        lines.append(f'.ENDS {fitted_model_name}')
+
+        # Join all lines with newline characters
+        spice_netlist = '\n'.join(lines)
+
+        # If file path is provided, write to file
+        if file is not None:
+            with open(file, 'w') as f:
+                f.write(spice_netlist)
+
+        return spice_netlist
+
+    def generate_spice_subcircuit_s24pspice(self, file: str = None, fitted_model_name: str = "s_equivalent",
+                                     create_reference_pins: bool = False) -> str:
+        """
+        Creates an equivalent N-port subcircuit based on its vector fitted scattering (S) parameter responses
+        in PSpice simulator netlist syntax. The circuit synthesis is based on a direct implementation of the
+        state-space representation of the vector fitted model [#vf-book]_.
+
+        Parameters
+        ----------
+        file : str, optional
+            Path and filename including file extension (usually .cir) for the subcircuit file.
+            If provided, the netlist will be written to this file. If None, only returns the string.
+
+        fitted_model_name: str
+            Name of the resulting subcircuit, default "s_equivalent"
+
+        create_reference_pins: bool
+            If set to True, the synthesized subcircuit will have N pin-pairs:
+            p1 p1_ref p2 p2_ref ... pN pN_ref
+
+            If set to False, the synthesized subcircuit will have N pins
+            p1 p2 ... pN
+            In this case, the reference nodes will be internally connected
+            to the global ground net 0.
+
+            The default is False
+
+        Returns
+        -------
+        str
+            The complete PSpice netlist as a string
+
+        Examples
+        --------
+        Load and fit the `Network`, then export the equivalent subcircuit:
+
+        >>> nw_3port = skrf.Network('my3port.s3p')
+        >>> vf = skrf.VectorFitting(nw_3port)
+        >>> vf.auto_fit()
+        >>> spice_netlist = vf.write_spice_subcircuit_s2()
+        >>> # Or to write to file:
+        >>> vf.write_spice_subcircuit_s2('/my3port_model.cir')
+
+        References
+        ----------
+        .. [#vf-book] S. Grivet-Talocia and B. Gustavsen, "Passive Macromodeling", Wiley, 2016,
+            doi: 链接
+
+        """
+
+        if np.any(self.proportional_coeff):
+            build_e = True
+        else:
+            build_e = False
+
+        # Build the netlist content as a string
+        lines = []
+
+        # write title line
+        lines.append('* EQUIVALENT CIRCUIT FOR VECTOR FITTED S-MATRIX')
+        lines.append('* Created by wyz.py')
+        lines.append('*')
+
+        # Create subcircuit pin string and reference nodes
+        if create_reference_pins:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1} p{x + 1}_ref', range(self.network.nports)))
+        else:
+            str_input_nodes = " ".join(map(lambda x: f'p{x + 1}', range(self.network.nports)))
+
+        lines.append(f'.SUBCKT {fitted_model_name} {str_input_nodes}')
+
+        for i in range(self.network.nports):
+            lines.append('*')
+            lines.append(f'* Port network for port {i + 1}')
+
+            if create_reference_pins:
+                node_ref_i = f'p{i + 1}_ref'
+            else:
+                node_ref_i = '0'
+
+            # reference impedance (real, i.e. resistance) of port i
+            z0_i = np.real(self.network.z0[0, i])
+
+            # transfer gain of the controlled current sources representing the incident power wave a_i at port i
+            gain_vccs_a_i = 1 / 2 / np.sqrt(z0_i)
+            gain_cccs_a_i = np.sqrt(z0_i) / 2
+
+            # transfer gain of the controlled current source representing the reflected power wave b_i at port i
+            gain_b_i = 2 / np.sqrt(z0_i)
+
+            # dummy voltage source (v = 0) for port current sensing (I_i)
+            lines.append(f'V{i + 1} p{i + 1} s{i + 1} 0')
+
+            # adding port reference resistor Ri = Z0_i
+            lines.append(f'R{i + 1} s{i + 1} {node_ref_i} {z0_i}')
+
+            # transfer of states and inputs from port j to input/output network of port i
+            for j in range(self.network.nports):
+                if create_reference_pins:
+                    node_ref_j = f'p{j + 1}_ref'
+                else:
+                    node_ref_j = '0'
+
+                # reference impedance (real, i.e. resistance) of port i
+                z0_j = np.real(self.network.z0[0, j])
+
+                # Stacking order in VectorFitting class variables:
+                idx_S_i_j = i * self.network.nports + j
+
+                # VCCS and CCCS adding their currents to represent the incident wave a_j
+                gain_vccs_a_j = 1 / 2 / np.sqrt(z0_j)
+                gain_cccs_a_j = np.sqrt(z0_j) / 2
+
+                d = self.constant_coeff[idx_S_i_j]
+                e = self.proportional_coeff[idx_S_i_j]
+
+                if d != 0.0:
+                    g_ij = gain_b_i * d * gain_vccs_a_j
+                    f_ij = gain_b_i * d * gain_cccs_a_j
+                    # PSpice syntax for VCCS
+                    lines.append(
+                        f'Gd{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(2) p{j + 1} {node_ref_j} 0 0 0 0 {g_ij}')
+                    # PSpice syntax for CCCS
+                    lines.append(f'Fd{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(1) V{j + 1} 0 0 0 {f_ij}')
+
+                if build_e and e != 0.0:
+                    g_ij = gain_b_i * e
+                    # PSpice syntax for VCCS
+                    lines.append(f'Ge{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(1) e{j + 1} 0 0 0 {g_ij}')
+
+                # each residue rk_i_j at port i is multiplied by its respective state signal xk_j
+                for k in range(len(self.poles)):
+                    pole = self.poles[k]
+                    residue = self.residues[idx_S_i_j, k]
+                    g_re = gain_b_i * np.real(residue)
+                    g_im = gain_b_i * np.imag(residue)
+
+                    if np.imag(pole) == 0.0:
+                        xkj = f'x{k + 1}_a{j + 1}'
+                        lines.append(f'Gr{k + 1}_{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(1) {xkj} 0 0 0 {g_re}')
+                    else:
+                        xk_re_j = f'x{k + 1}_re_a{j + 1}'
+                        xk_im_j = f'x{k + 1}_im_a{j + 1}'
+                        lines.append(
+                            f'Gr{k + 1}_re_{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(1) {xk_re_j} 0 0 0 {g_re}')
+                        lines.append(
+                            f'Gr{k + 1}_im_{i + 1}_{j + 1} {node_ref_i} s{i + 1} POLY(1) {xk_im_j} 0 0 0 {g_im}')
+
+            # create state networks driven by this port i (input variable u = a_i)
+            lines.append('*')
+            lines.append(f'* State networks driven by port {i + 1}')
+            for k in range(len(self.poles)):
+                pole = self.poles[k]
+                pole_re = np.real(pole)
+                pole_im = np.imag(pole)
+
+                if pole_im == 0.0:
+                    xki = f'x{k + 1}_a{i + 1}'
+                    lines.append(f'Cx{k + 1}_a{i + 1} {xki} 0 1.0')
+                    lines.append(f'Gx{k + 1}_a{i + 1} 0 {xki} POLY(2) p{i + 1} {node_ref_i} 0 0 0 0 {gain_vccs_a_i}')
+                    lines.append(f'Fx{k + 1}_a{i + 1} 0 {xki} POLY(1) V{i + 1} 0 0 0 {gain_cccs_a_i}')
+                    lines.append(f'Rp{k + 1}_a{i + 1} 0 {xki} {-1 / pole_re}')
+                else:
+                    xk_re_i = f'x{k + 1}_re_a{i + 1}'
+                    xk_im_i = f'x{k + 1}_im_a{i + 1}'
+                    lines.append(f'Cx{k + 1}_re_a{i + 1} {xk_re_i} 0 1.0')
+                    lines.append(
+                        f'Gx{k + 1}_re_a{i + 1} 0 {xk_re_i} POLY(2) p{i + 1} {node_ref_i} 0 0 0 0 {2 * gain_vccs_a_i}')
+                    lines.append(f'Fx{k + 1}_re_a{i + 1} 0 {xk_re_i} POLY(1) V{i + 1} 0 0 0 {2 * gain_cccs_a_i}')
+                    lines.append(f'Rp{k + 1}_re_re_a{i + 1} 0 {xk_re_i} {-1 / pole_re}')
+                    lines.append(f'Gp{k + 1}_re_im_a{i + 1} 0 {xk_re_i} POLY(1) {xk_im_i} 0 0 0 {pole_im}')
+
+                    lines.append(f'Cx{k + 1}_im_a{i + 1} {xk_im_i} 0 1.0')
+                    lines.append(f'Gp{k + 1}_im_re_a{i + 1} 0 {xk_im_i} POLY(1) {xk_re_i} 0 0 0 {-1 * pole_im}')
+                    lines.append(f'Rp{k + 1}_im_im_a{i + 1} 0 {xk_im_i} {-1 / pole_re}')
+
+            # create differentiation network for this port i (input variable u = a_i)
+            if build_e:
+                lines.append('*')
+                lines.append(f'* Network with derivative of input a_{i + 1} for proportional term')
+                lines.append(f'Le{i + 1} e{i + 1} 0 1.0')
+                lines.append(f'Ge{i + 1} 0 e{i + 1} POLY(2) p{i + 1} {node_ref_i} 0 0 0 0 {gain_vccs_a_i}')
+                lines.append(f'Fe{i + 1} 0 e{i + 1} POLY(1) V{i + 1} 0 0 0 {gain_cccs_a_i}')
+
+        lines.append(f'.ENDS {fitted_model_name}')
+
+        # Join all lines with newline characters
+        spice_netlist = '\n'.join(lines)
+
+        # If file path is provided, write to file
+        if file is not None:
+            with open(file, 'w') as f:
+                f.write(spice_netlist)
+
+        return spice_netlist

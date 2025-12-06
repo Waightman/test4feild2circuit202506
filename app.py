@@ -1,35 +1,69 @@
 import streamlit as st
 import os
 import base64
+import configparser
+import sys
 from streamlit import session_state as state
 
 # 初始化session state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
-# 用户凭据
-USER_CREDENTIALS = {
-    "users": {
-        "admin": {
-            "password": "admin123",
-            "access": ["all"]
-        },
-        "engineer": {
-            "password": "eng123",
-            "access": ["field2circuit", "spice_configure"]
-        }
-    }
-}
+# 读取配置文件
+def read_config():
+    config = configparser.ConfigParser()
+    # 尝试从当前目录读取配置文件
+    if os.path.exists('config.ini'):
+        config.read('config.ini')
+    else:
+        # 如果当前目录没有，尝试从程序所在目录读取
+        try:
+            config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
+        except:
+            # 如果都没有，创建默认配置
+            config['SERVER'] = {
+                'host': '0.0.0.0',
+                'port': '8501'
+            }
+            config['USERS'] = {
+                'admin': 'admin123:all',
+                'engineer': 'eng123:field2circuit,spice_configure'
+            }
+            with open('config.ini', 'w') as f:
+                config.write(f)
+    return config
 
+# 从配置文件加载用户凭据
+def load_credentials(config):
+    credentials = {"users": {}}
+    for user, value in config['USERS'].items():
+        parts = value.split(':')
+        password = parts[0]
+        access = parts[1].split(',') if len(parts) > 1 else []
+        credentials["users"][user] = {
+            "password": password,
+            "access": access
+        }
+    return credentials
+
+# 获取服务器配置
+def get_server_config(config):
+    return {
+        "host": config['SERVER'].get('host', '0.0.0.0'),
+        "port": config['SERVER'].getint('port', 8501)
+    }
+
+# 读取配置
+config = read_config()
+USER_CREDENTIALS = load_credentials(config)
+SERVER_CONFIG = get_server_config(config)
 
 def image_to_base64(image_path):
     """将图片转换为base64编码"""
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-
 LOGO_PATH = "company_logo.jpg"
-
 
 def login_page():
     # 检查图片是否存在
@@ -63,7 +97,6 @@ def login_page():
             else:
                 st.error("用户名或密码错误")
 
-
 def main_app():
     # 用户信息和登出按钮
     st.sidebar.write(f"当前用户: {st.session_state.current_user}")
@@ -93,9 +126,27 @@ def main_app():
     pg = st.navigation(available_pages)
     pg.run()
 
+def main():
+    # 根据认证状态显示不同内容
+    if not st.session_state.authenticated:
+        login_page()
+    else:
+        main_app()
 
-# 根据认证状态显示不同内容
-if not st.session_state.authenticated:
-    login_page()
-else:
-    main_app()
+if __name__ == "__main__":
+    # 保存原始sys.argv
+    original_argv = sys.argv.copy()
+
+    try:
+        # 设置Streamlit运行参数
+        sys.argv = [
+            "streamlit", "run", __file__,
+            f"--server.address={SERVER_CONFIG['host']}",
+            f"--server.port={SERVER_CONFIG['port']}"
+        ]
+
+        # 调用主函数
+        main()
+    finally:
+        # 恢复原始sys.argv
+        sys.argv = original_argv
