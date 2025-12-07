@@ -3,9 +3,9 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import StringIO
-import wyz_io
 import os
 import re
+import time  # 1. 引入time模块，用于UI延时
 
 # ================= 配置部分 =================
 # 设置 Matplotlib 中文字体
@@ -101,6 +101,7 @@ def parse_data_file(uploaded_file):
 
 
 def convert_to_mhz(freq, unit):
+    """将频率转换为MHz单位"""
     if unit == "Hz":
         return freq / 1e6
     elif unit == "KHz":
@@ -114,6 +115,7 @@ def convert_to_mhz(freq, unit):
 
 
 def validate_frequency_range(data_content, frequency_unit, table_name):
+    """验证频率范围是否符合要求"""
     try:
         df = pd.read_csv(StringIO(data_content), sep='\t' if '\t' in data_content else ',', header=None)
         if df.shape[1] < 1:
@@ -148,6 +150,7 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
 
 
 def plot_data(data_content, title, ylabel):
+    """绘制数据曲线"""
     if not data_content:
         st.warning("没有可用的数据")
         return
@@ -174,6 +177,7 @@ def plot_data(data_content, title, ylabel):
 
 
 def smart_parse_hirf_filename(filename):
+    """智能解析 HIRF 文件名"""
     info = {
         "aircraft_model": "",
         "position": "",
@@ -208,6 +212,7 @@ def smart_parse_hirf_filename(filename):
 # ================= 核心操作函数 =================
 
 def add_record_db(conn, table_name, record_dict):
+    """通用添加记录函数"""
     try:
         cursor = conn.cursor()
         if table_name == "induced_current":
@@ -234,13 +239,15 @@ def add_record_db(conn, table_name, record_dict):
 
 
 def delete_record(conn, table_name, record_id):
+    """删除记录，返回成功状态而不是直接打印"""
     try:
         cursor = conn.cursor()
         cursor.execute(f'DELETE FROM {table_name} WHERE id=?', (record_id,))
         conn.commit()
-        st.success("记录删除成功!")
+        return True  # 返回True表示成功
     except sqlite3.Error as e:
         st.error(f"删除记录错误: {e}")
+        return False
 
 
 def query_records(conn, table_name, conditions=None):
@@ -262,6 +269,7 @@ def query_records(conn, table_name, conditions=None):
 
 
 def generate_download_file(record, table_name):
+    """生成下载文件"""
     try:
         if table_name == "induced_current":
             filename_fields = [
@@ -311,6 +319,7 @@ def main():
     #########0  显示公司logo
     LOGO_PATH = "company_logo.jpg"
     if not os.path.exists(LOGO_PATH):
+        # 模拟 wyz_io 避免报错
         class MockIo:
             @staticmethod
             def image_to_base64(p): return ""
@@ -318,14 +327,19 @@ def main():
         wyz_io = MockIo()
         logo_html = ""
     else:
-        import wyz_io
-        logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
-        logo_html = f"""
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-            <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 60px;">
-            <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
-        </div>
-        """
+        try:
+            import wyz_io
+            logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+            logo_html = f"""
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 60px;">
+                <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
+            </div>
+            """
+        except ImportError:
+            logo_html = ""
+
+    if logo_html:
         st.markdown(logo_html, unsafe_allow_html=True)
 
     init_session_state()
@@ -339,6 +353,7 @@ def main():
         st.error("无法连接到数据库!")
         return
 
+    # 侧边栏
     st.sidebar.title("导航")
     menu = ["感应电流数据库 (0.2MHz~1400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
     database_type = st.sidebar.selectbox("数据库选择", menu)
@@ -402,16 +417,14 @@ def main():
 
             # 详情查看
             record_ids = [r['id'] for r in st.session_state.records]
-
-            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
-            record_map = {r['id']: r['aircraft_model'] for r in st.session_state.records}
+            # 建立 ID -> 机型 映射
+            id_map = {r['id']: r['aircraft_model'] for r in st.session_state.records}
 
             selected_id = st.selectbox(
                 "选择ID查看详情",
                 record_ids,
-                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
+                format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
             )
-            # ----------------------------------------------------
 
             if selected_id:
                 rec = next(r for r in st.session_state.records if r['id'] == selected_id)
@@ -432,12 +445,12 @@ def main():
                 fname, fcontent = generate_download_file(rec, table_name)
                 st.download_button("📥 下载数据文件", fcontent, fname)
 
-    # ================= 2. 添加数据 (含批量导入) =================
+    # ================= 2. 添加数据 (含批量) =================
     elif operation == "添加数据":
         st.header(f"{database_type} - 添加")
         tab_single, tab_batch = st.tabs(["单条添加", "批量文件导入"])
 
-        # ... (添加数据逻辑保持不变)
+        # --- 单条添加 ---
         with tab_single:
             with st.form("add_form"):
                 col1, col2 = st.columns(2)
@@ -461,7 +474,7 @@ def main():
                 data_stat_type = "MAX"
                 if is_field_db:
                     st.markdown("---")
-                    data_stat_type = st.selectbox("数据统计类型 (Task 1)*", ["MAX", "MIN", "AV"], help="区分最大值、最小值或平均值数据")
+                    data_stat_type = st.selectbox("数据统计类型*", ["MAX", "MIN", "AV"])
 
                 data_file = st.file_uploader("上传数据文件 (TXT)*", type=['txt'])
                 notes = st.text_area("备注", "")
@@ -495,9 +508,9 @@ def main():
                                 if add_record_db(conn, table_name, record):
                                     st.success("数据添加成功！")
 
+        # --- 批量导入 ---
         with tab_batch:
             st.markdown("### 批量数据文件导入")
-            st.info(f"支持多文件上传。系统会根据文件名自动猜测型号、位置等信息。文件名示例: `AG600_Head_Ant1_Vertical.txt`")
             uploaded_files = st.file_uploader("选择多个数据文件", type=["txt", "dat"], accept_multiple_files=True)
             if uploaded_files:
                 file_map = {f.name: f for f in uploaded_files}
@@ -531,7 +544,7 @@ def main():
                 if is_field_db:
                     col_config["数据类型"] = st.column_config.SelectboxColumn(options=["MAX", "MIN", "AV"], required=True)
 
-                st.markdown("⬇️ **请在下方表格确认并修正信息 (支持像Excel一样编辑):**")
+                st.markdown("⬇️ **请在下方表格确认并修正信息:**")
                 edited_df = st.data_editor(df_batch, column_config=col_config, use_container_width=True,
                                            hide_index=True, num_rows="fixed")
 
@@ -543,14 +556,13 @@ def main():
                         fname = row["文件名"]
                         f_obj = file_map.get(fname)
                         if not row["飞机型号"] or not row[probe_label]:
-                            st.toast(f"跳过 {fname}: 信息不完整", icon="⚠️")
                             fail_count += 1
                             continue
                         f_obj.seek(0)
                         content = parse_data_file(f_obj)
                         valid, msg = validate_frequency_range(content, row["频率单位"], table_name)
                         if not valid:
-                            st.error(f"文件 {fname} 校验失败: {msg}")
+                            st.error(f"{fname}: {msg}")
                             fail_count += 1
                             continue
                         db_record = {
@@ -573,6 +585,7 @@ def main():
                         else:
                             fail_count += 1
                         progress_bar.progress((idx + 1) / len(edited_df))
+
                     st.toast(f"导入完成! 成功: {success_count}, 失败: {fail_count}")
                     if success_count > 0:
                         st.success(f"成功导入 {success_count} 条数据")
@@ -585,14 +598,13 @@ def main():
         if not records:
             st.warning("暂无数据")
         else:
-            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
-            record_map = {r['id']: r['aircraft_model'] for r in records}
+            # ID -> 机型 映射
+            id_map = {r['id']: r['aircraft_model'] for r in records}
             sel_id = st.selectbox(
                 "选择记录修改",
                 [r['id'] for r in records],
-                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
+                format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
             )
-            # ----------------------------------------------------
 
             rec = next(r for r in records if r['id'] == sel_id)
 
@@ -604,6 +616,7 @@ def main():
 
                 new_ant_pos = c2.text_input("天线位置", rec['antenna_position'])
 
+                new_type = None
                 if is_field_db:
                     curr_type = rec.get('data_stat_type', 'MAX') or 'MAX'
                     idx_type = ["MAX", "MIN", "AV"].index(curr_type) if curr_type in ["MAX", "MIN", "AV"] else 0
@@ -624,22 +637,41 @@ def main():
                     conn.commit()
                     st.success("更新成功！")
 
-    # ================= 4. 删除数据 =================
+    # ================= 4. 删除数据 (自动刷新) =================
     elif operation == "删除数据":
         st.header(f"{database_type} - 删除")
         records = query_records(conn, table_name)
         if records:
-            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
-            record_map = {r['id']: r['aircraft_model'] for r in records}
-            sel_id = st.selectbox(
-                "选择要删除的ID",
-                [r['id'] for r in records],
-                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
-            )
-            # ----------------------------------------------------
+            # 1. 建立 ID -> 机型 映射
+            id_map = {r['id']: r['aircraft_model'] for r in records}
 
-            if st.button("确认删除"):
-                delete_record(conn, table_name, sel_id)
+            # 2. 选择框，使用 format_func
+            sel_id = st.selectbox(
+                "选择要删除的记录",
+                [r['id'] for r in records],
+                format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
+            )
+
+            # 3. 提示信息
+            to_delete_rec = next((r for r in records if r['id'] == sel_id), None)
+            if to_delete_rec:
+                st.warning(f"即将删除: 【{to_delete_rec['aircraft_model']}】 的数据 (ID: {sel_id})，此操作无法撤销！")
+
+            # 4. 删除逻辑
+            if st.button("确认删除", type="primary"):
+                if delete_record(conn, table_name, sel_id):
+                    # 显示 Toast 提示
+                    st.toast(f"ID:{sel_id} 删除成功，正在刷新...", icon="🗑️")
+
+                    # 清除本地缓存
+                    st.session_state.records = []
+                    st.session_state.selected_id = None
+
+                    # 延时让用户看清提示
+                    time.sleep(0.8)
+
+                    # 强制刷新页面，更新下拉框
+                    st.rerun()
         else:
             st.info("无数据可删")
 
