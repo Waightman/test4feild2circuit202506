@@ -40,6 +40,47 @@ def read_matrix_from_txt(file_path):
     return matrix_complex, list(frequecy_set)[0]
 
 
+def read_matrix_from_txt2(file_path):
+    ### 这个函数对应s参数，其格式是db+degree
+    matrix_data = []
+    aaa = type(file_path)
+    # 打开文件读取
+    #with open(file_path, 'r') as file:
+    file_content = file_path.read()
+    # 将 bytes 解码为字符串
+    file_content_str = file_content.decode("utf-8")
+    for line in file_content_str.splitlines():
+        # 跳过以#或>开头的行以及空白行
+        if line.startswith('#') or line.startswith('>') or line.startswith('.')or line.strip() == '':
+            continue
+
+        # 处理数字行，转换为数字列表
+        values = line.strip().split()
+        matrix_data.append([float(v) for v in values])
+
+    # 将列表转换为NumPy数组（矩阵）
+    matrix = np.array(matrix_data)
+    ####下面将其转化为方阵
+    [num_row, num_coloum] = matrix.shape
+    #####参数检测
+
+    #####
+    size_mat = int(np.sqrt(num_row))
+    data_real = matrix[:, 3]
+    data_imag = matrix[:, 4]
+    mat_real = data_real.reshape((size_mat,size_mat))
+    mat_imag = data_imag.reshape((size_mat, size_mat))
+    # 1. dB 转 线性幅度 (假设是电压/幅度增益，使用 /20)
+    magnitude = 10 ** (mat_real / 20.0)
+    # 2. 角度 转 弧度
+    phase_rad = np.deg2rad(mat_imag)
+    matrix_complex = magnitude * np.exp(1j * phase_rad)#mat_real+mat_imag*1J
+
+    frequecy_array = matrix[:, 0]
+    frequecy_set = set(frequecy_array)
+    return matrix_complex, list(frequecy_set)[0]
+
+
 def read_ztm_data(xml_file_pathname):
 
     # 分离路径和文件名
