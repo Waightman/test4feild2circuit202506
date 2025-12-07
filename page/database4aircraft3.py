@@ -592,50 +592,149 @@ def main():
                         st.session_state.batch_hirf_cache = None
 
     # ================= 3. 修改数据 =================
+        # ================= 3. 修改数据 (已优化：字段全覆盖) =================
     elif operation == "修改数据":
         st.header(f"{database_type} - 修改")
         records = query_records(conn, table_name)
+
         if not records:
-            st.warning("暂无数据")
+            st.warning("暂无数据可供修改")
         else:
-            # ID -> 机型 映射
+            # 1. 建立 ID -> 机型 映射，方便搜索选择
             id_map = {r['id']: r['aircraft_model'] for r in records}
+
+            # 使用带搜索功能的下拉框
             sel_id = st.selectbox(
-                "选择记录修改",
+                "选择要修改的记录",
                 [r['id'] for r in records],
                 format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
             )
 
+            # 获取当前选中的完整记录
             rec = next(r for r in records if r['id'] == sel_id)
 
-            with st.form("update_form"):
-                c1, c2 = st.columns(2)
-                new_model = c1.text_input("飞机型号", rec['aircraft_model'])
-                pos_key = 'current_probe_position' if not is_field_db else 'receiving_antenna_position'
-                new_pos = c1.text_input(probe_label, rec[pos_key])
+            # 使用容器包裹表单，视觉更清晰
+            with st.container(border=True):
+                st.markdown(f"### 编辑记录 ID: {sel_id}")
 
-                new_ant_pos = c2.text_input("天线位置", rec['antenna_position'])
+                with st.form("update_form"):
+                    # === 第一行：基础信息 ===
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        new_model = st.text_input("飞机型号*", value=rec['aircraft_model'])
 
-                new_type = None
-                if is_field_db:
-                    curr_type = rec.get('data_stat_type', 'MAX') or 'MAX'
-                    idx_type = ["MAX", "MIN", "AV"].index(curr_type) if curr_type in ["MAX", "MIN", "AV"] else 0
-                    new_type = c2.selectbox("数据类型", ["MAX", "MIN", "AV"], index=idx_type)
+                        # 根据表类型判断字段名
+                        pos_key = 'current_probe_position' if not is_field_db else 'receiving_antenna_position'
+                        new_pos = st.text_input(f"{probe_label}*", value=rec[pos_key])
 
-                submitted = st.form_submit_button("更新数据")
+                    with col2:
+                        new_ant_pos = st.text_input("实验天线位置*", value=rec['antenna_position'])
 
-                if submitted:
-                    cursor = conn.cursor()
+                        # 频率单位处理
+                        f_units = ["Hz", "KHz", "MHz", "GHz"]
+                        curr_unit = rec.get('frequency_unit', 'MHz')
+                        # 防止数据库中的单位不在列表中导致报错
+                        unit_index = f_units.index(curr_unit) if curr_unit in f_units else 2
+                        new_freq_unit = st.selectbox("频率单位*", f_units, index=unit_index)
+
+                    # === 第二行：天线参数 ===
+                    col3, col4, col5 = st.columns(3)
+                    with col3:
+                        new_ant_type = st.text_input("实验天线类型*", value=rec.get('antenna_type', '一般天线'))
+
+                    with col4:
+                        # 极化方式处理
+                        pol_opts = ["垂直极化", "水平极化"]
+                        curr_pol = rec.get('antenna_polarization', '垂直极化')
+                        pol_idx = pol_opts.index(curr_pol) if curr_pol in pol_opts else 0
+                        new_pol = st.selectbox("极化方式*", pol_opts, index=pol_idx)
+
+                    with col5:
+                        new_angle = st.text_input("入射角度*", value=rec.get('antenna_incident_angle', '0'))
+
+                    # === 第三行：特殊字段 (仅感应电场) ===
+                    new_stat_type = "MAX"
                     if is_field_db:
-                        cursor.execute(
-                            f"UPDATE {table_name} SET aircraft_model=?, receiving_antenna_position=?, antenna_position=?, data_stat_type=? WHERE id=?",
-                            (new_model, new_pos, new_ant_pos, new_type, sel_id))
+                        st.markdown("---")
+                        stat_opts = ["MAX", "MIN", "AV"]
+                        curr_stat = rec.get('data_stat_type', 'MAX')
+                        stat_idx = stat_opts.index(curr_stat) if curr_stat in stat_opts else 0
+                        new_stat_type = st.selectbox("数据统计类型*", stat_opts, index=stat_idx)
+
+                    st.markdown("---")
+
+                    # === 第四行：文件与备注 ===
+                    st.markdown("**数据文件管理**")
+                    col_file_info, col_file_up = st.columns([1, 2])
+                    with col_file_info:
+                        st.info("当前已存储数据。如需修改，请在右侧上传新文件；留空则保持原数据。")
+                    with col_file_up:
+                        new_data_file = st.file_uploader("替换数据文件 (可选)", type=['txt'])
+
+                    new_notes = st.text_area("备注", value=rec.get('notes', ''))
+
+                    # 提交按钮
+                    submitted = st.form_submit_button("💾 保存修改", type="primary")
+
+                # === 处理提交逻辑 ===
+                if submitted:
+                    if not (new_model and new_pos and new_ant_pos and new_ant_type):
+                        st.error("带 * 的字段不能为空")
                     else:
-                        cursor.execute(
-                            f"UPDATE {table_name} SET aircraft_model=?, current_probe_position=?, antenna_position=? WHERE id=?",
-                            (new_model, new_pos, new_ant_pos, sel_id))
-                    conn.commit()
-                    st.success("更新成功！")
+                        try:
+                            # 1. 确定数据内容 (使用新上传的 或 保持旧的)
+                            final_content = rec['data_content']
+                            if new_data_file is not None:
+                                parsed_content = parse_data_file(new_data_file)
+                                # 如果上传了新文件，必须重新校验频率范围
+                                valid, msg = validate_frequency_range(parsed_content, new_freq_unit, table_name)
+                                if not valid:
+                                    st.error(f"新文件校验失败: {msg}")
+                                    st.stop()  # 终止执行
+                                else:
+                                    final_content = parsed_content
+
+                            # 2. 执行数据库更新
+                            cursor = conn.cursor()
+
+                            if is_field_db:
+                                cursor.execute(f'''
+                                        UPDATE {table_name} SET 
+                                        aircraft_model=?, receiving_antenna_position=?, antenna_position=?, 
+                                        antenna_type=?, antenna_polarization=?, antenna_incident_angle=?,
+                                        frequency_unit=?, notes=?, data_stat_type=?, data_content=?
+                                        WHERE id=?
+                                    ''', (
+                                    new_model, new_pos, new_ant_pos,
+                                    new_ant_type, new_pol, new_angle,
+                                    new_freq_unit, new_notes, new_stat_type, final_content,
+                                    sel_id
+                                ))
+                            else:
+                                cursor.execute(f'''
+                                        UPDATE {table_name} SET 
+                                        aircraft_model=?, current_probe_position=?, antenna_position=?, 
+                                        antenna_type=?, antenna_polarization=?, antenna_incident_angle=?,
+                                        frequency_unit=?, notes=?, data_content=?
+                                        WHERE id=?
+                                    ''', (
+                                    new_model, new_pos, new_ant_pos,
+                                    new_ant_type, new_pol, new_angle,
+                                    new_freq_unit, new_notes, final_content,
+                                    sel_id
+                                ))
+
+                            conn.commit()
+                            st.toast("数据修改成功！", icon="✅")
+                            time.sleep(1)  # 稍作延迟以显示提示
+                            st.rerun()  # 刷新页面显示最新数据
+
+                        except Exception as e:
+                            st.error(f"更新失败: {e}")
+
+
+
+
 
     # ================= 4. 删除数据 (自动刷新) =================
     elif operation == "删除数据":
