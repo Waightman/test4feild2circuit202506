@@ -66,11 +66,9 @@ def init_db(conn):
         ''')
 
         # --- 数据库迁移逻辑: 检查并添加 data_stat_type 字段 ---
-        # 针对 Task 1: 增加 MAX, MIN, AV 区分
         try:
             cursor.execute("SELECT data_stat_type FROM induced_field LIMIT 1")
         except sqlite3.OperationalError:
-            # 如果字段不存在，添加它，默认值为 'MAX'
             cursor.execute("ALTER TABLE induced_field ADD COLUMN data_stat_type TEXT DEFAULT 'MAX'")
             st.toast("数据库结构已更新：添加了 data_stat_type 字段", icon="✅")
         # --------------------------------------------------
@@ -95,7 +93,6 @@ def init_session_state():
 def parse_data_file(uploaded_file):
     """解析上传的文件内容"""
     try:
-        # 读取文件内容为字符串
         content = uploaded_file.getvalue().decode("utf-8", errors='ignore')
         return content
     except Exception as e:
@@ -104,7 +101,6 @@ def parse_data_file(uploaded_file):
 
 
 def convert_to_mhz(freq, unit):
-    """将频率转换为MHz单位"""
     if unit == "Hz":
         return freq / 1e6
     elif unit == "KHz":
@@ -118,14 +114,12 @@ def convert_to_mhz(freq, unit):
 
 
 def validate_frequency_range(data_content, frequency_unit, table_name):
-    """验证频率范围是否符合要求"""
     try:
         df = pd.read_csv(StringIO(data_content), sep='\t' if '\t' in data_content else ',', header=None)
         if df.shape[1] < 1:
             return False, "数据文件需要至少包含频率列"
 
         frequencies = df.iloc[:, 0]
-        # 尝试转换为数字，强制将非数字转为 NaN
         frequencies = pd.to_numeric(frequencies, errors='coerce').dropna()
 
         if frequencies.empty:
@@ -134,7 +128,7 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
         frequencies_mhz = frequencies.apply(lambda x: convert_to_mhz(x, frequency_unit))
 
         if table_name == "induced_current":
-            min_freq, max_freq = 0.5, 400  # 放宽一点点下限以防边界误差
+            min_freq, max_freq = 0.2, 1400
             data_type = "感应电流"
         else:  # induced_field
             min_freq, max_freq = 100, 8000
@@ -143,10 +137,9 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
         f_min = frequencies_mhz.min()
         f_max = frequencies_mhz.max()
 
-        # 简单的容差检查
-        if f_min < min_freq * 0.9:  # 允许10%误差
+        if f_min < min_freq * 0.9:
             return False, f"{data_type}频率过低: {f_min:.2f}MHz (标准>{min_freq}MHz)"
-        if f_max > max_freq * 1.1:  # 允许10%误差
+        if f_max > max_freq * 1.1:
             return False, f"{data_type}频率过高: {f_max:.2f}MHz (标准<{max_freq}MHz)"
 
         return True, "频率范围验证通过"
@@ -155,7 +148,6 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
 
 
 def plot_data(data_content, title, ylabel):
-    """绘制数据曲线"""
     if not data_content:
         st.warning("没有可用的数据")
         return
@@ -167,11 +159,8 @@ def plot_data(data_content, title, ylabel):
             return
 
         fig, ax = plt.subplots(figsize=(10, 4))
-        # 尝试转换第一列为数字，用于绘图
         x_data = pd.to_numeric(data.iloc[:, 0], errors='coerce')
         y_data = pd.to_numeric(data.iloc[:, 1], errors='coerce')
-
-        # 过滤掉无效数据
         mask = x_data.notna() & y_data.notna()
 
         ax.plot(x_data[mask], y_data[mask])
@@ -185,18 +174,13 @@ def plot_data(data_content, title, ylabel):
 
 
 def smart_parse_hirf_filename(filename):
-    """
-    智能解析 HIRF 文件名
-    假设格式类似于: AG600_Head_Ant1_Vertical_0deg.txt
-    或者尽可能从字符串中提取信息
-    """
     info = {
         "aircraft_model": "",
-        "position": "",  # 探针或接收天线位置
+        "position": "",
         "antenna_pos": "",
         "polarization": "垂直极化",
         "angle": "0",
-        "type": "MAX"  # 默认
+        "type": "MAX"
     }
 
     name_no_ext = filename.rsplit('.', 1)[0]
@@ -206,13 +190,11 @@ def smart_parse_hirf_filename(filename):
     if len(parts) >= 2: info["position"] = parts[1]
     if len(parts) >= 3: info["antenna_pos"] = parts[2]
 
-    # 极化猜测
     if "Hor" in name_no_ext or "水平" in name_no_ext:
         info["polarization"] = "水平极化"
     elif "Ver" in name_no_ext or "垂直" in name_no_ext:
         info["polarization"] = "垂直极化"
 
-    # 统计类型猜测 (MAX/MIN/AV)
     if "MIN" in name_no_ext.upper():
         info["type"] = "MIN"
     elif "AV" in name_no_ext.upper():
@@ -226,7 +208,6 @@ def smart_parse_hirf_filename(filename):
 # ================= 核心操作函数 =================
 
 def add_record_db(conn, table_name, record_dict):
-    """通用添加记录函数"""
     try:
         cursor = conn.cursor()
         if table_name == "induced_current":
@@ -237,8 +218,7 @@ def add_record_db(conn, table_name, record_dict):
             VALUES (:aircraft_model, :current_probe_position, :antenna_position, :antenna_type, 
              :antenna_polarization, :antenna_incident_angle, :data_content, :frequency_unit, :notes)
             ''', record_dict)
-        else:  # induced_field
-            # 注意：这里加入了 Task 1 的 data_stat_type
+        else:
             cursor.execute(f'''
             INSERT INTO {table_name} 
             (aircraft_model, receiving_antenna_position, antenna_position, antenna_type, 
@@ -271,7 +251,7 @@ def query_records(conn, table_name, conditions=None):
             query += ' AND '.join([f"{k}=?" for k in conditions.keys()])
             cursor.execute(query, tuple(conditions.values()))
         else:
-            cursor.execute(f'SELECT * FROM {table_name} ORDER BY id DESC')  # 默认倒序
+            cursor.execute(f'SELECT * FROM {table_name} ORDER BY id DESC')
 
         columns = [column[0] for column in cursor.description]
         records = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -282,13 +262,8 @@ def query_records(conn, table_name, conditions=None):
 
 
 def generate_download_file(record, table_name):
-    """
-    生成下载文件，文件名采用详细字段拼接 (参考 database4aircraft2.py)
-    """
     try:
-        # 1. 根据数据库类型定义文件名字段顺序
         if table_name == "induced_current":
-            # 感应电流: 型号_探针位置_天线位置_天线类型_极化_角度_频率单位
             filename_fields = [
                 record.get('aircraft_model'),
                 record.get('current_probe_position'),
@@ -299,11 +274,10 @@ def generate_download_file(record, table_name):
                 record.get('frequency_unit')
             ]
         else:
-            # 感应电场: 型号_接收天线_统计类型(MAX/MIN)_天线位置_极化_角度_频率单位
             filename_fields = [
                 record.get('aircraft_model'),
                 record.get('receiving_antenna_position'),
-                record.get('data_stat_type', 'MAX'),  # 确保包含 MAX/MIN/AV
+                record.get('data_stat_type', 'MAX'),
                 record.get('antenna_position'),
                 record.get('antenna_type'),
                 record.get('antenna_polarization'),
@@ -311,24 +285,19 @@ def generate_download_file(record, table_name):
                 record.get('frequency_unit')
             ]
 
-        # 2. 过滤和清洗字段 (参考 database4aircraft2.py 逻辑)
         valid_parts = []
         for field in filename_fields:
-            if field:  # 去除 None 和 空字符串
+            if field:
                 s_val = str(field).strip()
-                # 替换文件名非法字符 (将斜杠转换为横杠)
                 s_val = s_val.replace('/', '-').replace('\\', '-')
                 valid_parts.append(s_val)
 
-        # 3. 拼接文件名
         if valid_parts:
             filename = "_".join(valid_parts) + ".txt"
         else:
             filename = "unknown_data.txt"
 
-        # 获取数据内容
         data_content = record['data_content']
-
         return filename, data_content
 
     except Exception as e:
@@ -342,7 +311,6 @@ def main():
     #########0  显示公司logo
     LOGO_PATH = "company_logo.jpg"
     if not os.path.exists(LOGO_PATH):
-        # 模拟 wyz_io
         class MockIo:
             @staticmethod
             def image_to_base64(p): return ""
@@ -350,7 +318,7 @@ def main():
         wyz_io = MockIo()
         logo_html = ""
     else:
-        import wyz_io  # 假设环境里有这个
+        import wyz_io
         logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
         logo_html = f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
@@ -371,21 +339,18 @@ def main():
         st.error("无法连接到数据库!")
         return
 
-    # 侧边栏
     st.sidebar.title("导航")
-    menu = ["感应电流数据库 (1MHz~400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
+    menu = ["感应电流数据库 (0.2MHz~1400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
     database_type = st.sidebar.selectbox("数据库选择", menu)
 
-    # 切换数据库时重置状态
     if 'prev_database_type' not in st.session_state:
         st.session_state.prev_database_type = database_type
     elif st.session_state.prev_database_type != database_type:
         st.session_state.records = []
         st.session_state.selected_id = None
-        st.session_state.batch_hirf_cache = None  # 切换时清空批量缓存
+        st.session_state.batch_hirf_cache = None
         st.session_state.prev_database_type = database_type
 
-    # 配置变量
     if "感应电流" in database_type:
         table_name = "induced_current"
         ylabel = "Current (A)"
@@ -397,7 +362,6 @@ def main():
         probe_label = "接收天线位置"
         is_field_db = True
     else:
-        # 关于页面
         st.markdown("### 关于系统\n本系统用于管理飞机HIRF测试数据。")
         conn.close()
         return
@@ -413,7 +377,6 @@ def main():
         with col2:
             probe_field = st.text_input(probe_label, "")
         with col3:
-            # 如果是电场，增加数据类型筛选
             if is_field_db:
                 data_stat = st.selectbox("数据类型", ["全部", "MAX", "MIN", "AV"])
             else:
@@ -434,13 +397,21 @@ def main():
 
         if st.session_state.records:
             df = pd.DataFrame(st.session_state.records)
-            # 隐藏大文本列
             if 'data_content' in df.columns: df = df.drop(columns=['data_content'])
             st.dataframe(df, use_container_width=True)
 
             # 详情查看
             record_ids = [r['id'] for r in st.session_state.records]
-            selected_id = st.selectbox("选择ID查看详情", record_ids, format_func=lambda x: f"ID: {x}")
+
+            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
+            record_map = {r['id']: r['aircraft_model'] for r in st.session_state.records}
+
+            selected_id = st.selectbox(
+                "选择ID查看详情",
+                record_ids,
+                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
+            )
+            # ----------------------------------------------------
 
             if selected_id:
                 rec = next(r for r in st.session_state.records if r['id'] == selected_id)
@@ -464,11 +435,9 @@ def main():
     # ================= 2. 添加数据 (含批量导入) =================
     elif operation == "添加数据":
         st.header(f"{database_type} - 添加")
-
-        # 使用 Tabs 分开单条和批量 (Task 2 & 3)
         tab_single, tab_batch = st.tabs(["单条添加", "批量文件导入"])
 
-        # --- A. 单条添加 ---
+        # ... (添加数据逻辑保持不变)
         with tab_single:
             with st.form("add_form"):
                 col1, col2 = st.columns(2)
@@ -489,7 +458,6 @@ def main():
                 with col5:
                     ant_angle = st.text_input("入射角度*", "0")
 
-                # Task 1: 感应电场增加 MAX/MIN/AV 下拉框
                 data_stat_type = "MAX"
                 if is_field_db:
                     st.markdown("---")
@@ -508,7 +476,6 @@ def main():
                             if not valid:
                                 st.error(f"校验失败: {msg}")
                             else:
-                                # 构建字典
                                 record = {
                                     "aircraft_model": aircraft_model,
                                     "antenna_position": antenna_pos,
@@ -528,18 +495,12 @@ def main():
                                 if add_record_db(conn, table_name, record):
                                     st.success("数据添加成功！")
 
-        # --- B. 批量导入 (Task 2 & 3 实现) ---
         with tab_batch:
             st.markdown("### 批量数据文件导入")
             st.info(f"支持多文件上传。系统会根据文件名自动猜测型号、位置等信息。文件名示例: `AG600_Head_Ant1_Vertical.txt`")
-
             uploaded_files = st.file_uploader("选择多个数据文件", type=["txt", "dat"], accept_multiple_files=True)
-
             if uploaded_files:
-                # 建立映射防止 file 对象丢失
                 file_map = {f.name: f for f in uploaded_files}
-
-                # 缓存解析结果，避免每次刷新重置表格
                 if st.session_state.batch_hirf_cache is None or len(st.session_state.batch_hirf_cache) != len(
                         uploaded_files):
                     data_list = []
@@ -551,18 +512,15 @@ def main():
                             probe_label: smart["position"],
                             "实验天线位置": smart["antenna_pos"],
                             "极化方式": smart["polarization"],
-                            "频率单位": "MHz" if not is_field_db else "GHz",  # 默认
+                            "频率单位": "MHz" if not is_field_db else "GHz",
                             "备注": "批量导入"
                         }
                         if is_field_db:
                             row["数据类型"] = smart["type"]
-
                         data_list.append(row)
                     st.session_state.batch_hirf_cache = pd.DataFrame(data_list)
 
-                # 配置表格编辑器
                 df_batch = st.session_state.batch_hirf_cache
-
                 col_config = {
                     "文件名": st.column_config.TextColumn("文件名", disabled=True),
                     "飞机型号": st.column_config.TextColumn(required=True),
@@ -581,66 +539,61 @@ def main():
                     success_count = 0
                     fail_count = 0
                     progress_bar = st.progress(0)
-
                     for idx, row in edited_df.iterrows():
                         fname = row["文件名"]
                         f_obj = file_map.get(fname)
-
                         if not row["飞机型号"] or not row[probe_label]:
                             st.toast(f"跳过 {fname}: 信息不完整", icon="⚠️")
                             fail_count += 1
                             continue
-
-                        # 读取内容
                         f_obj.seek(0)
                         content = parse_data_file(f_obj)
-
-                        # 校验频率
                         valid, msg = validate_frequency_range(content, row["频率单位"], table_name)
                         if not valid:
                             st.error(f"文件 {fname} 校验失败: {msg}")
                             fail_count += 1
                             continue
-
-                        # 准备入库数据
                         db_record = {
                             "aircraft_model": row["飞机型号"],
                             "antenna_position": row["实验天线位置"],
-                            "antenna_type": "一般天线",  # 批量默认值，可按需扩展
+                            "antenna_type": "一般天线",
                             "antenna_polarization": row["极化方式"],
-                            "antenna_incident_angle": "0",  # 批量默认值
+                            "antenna_incident_angle": "0",
                             "data_content": content,
                             "frequency_unit": row["频率单位"],
                             "notes": row["备注"]
                         }
-
                         if is_field_db:
                             db_record["receiving_antenna_position"] = row[probe_label]
                             db_record["data_stat_type"] = row["数据类型"]
                         else:
                             db_record["current_probe_position"] = row[probe_label]
-
                         if add_record_db(conn, table_name, db_record):
                             success_count += 1
                         else:
                             fail_count += 1
-
                         progress_bar.progress((idx + 1) / len(edited_df))
-
                     st.toast(f"导入完成! 成功: {success_count}, 失败: {fail_count}")
                     if success_count > 0:
                         st.success(f"成功导入 {success_count} 条数据")
-                        st.session_state.batch_hirf_cache = None  # 清空缓存
+                        st.session_state.batch_hirf_cache = None
 
     # ================= 3. 修改数据 =================
     elif operation == "修改数据":
         st.header(f"{database_type} - 修改")
-        # 简单实现：先选ID，再显示Form
         records = query_records(conn, table_name)
         if not records:
             st.warning("暂无数据")
         else:
-            sel_id = st.selectbox("选择记录修改", [r['id'] for r in records], format_func=lambda x: f"ID: {x}")
+            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
+            record_map = {r['id']: r['aircraft_model'] for r in records}
+            sel_id = st.selectbox(
+                "选择记录修改",
+                [r['id'] for r in records],
+                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
+            )
+            # ----------------------------------------------------
+
             rec = next(r for r in records if r['id'] == sel_id)
 
             with st.form("update_form"):
@@ -651,9 +604,8 @@ def main():
 
                 new_ant_pos = c2.text_input("天线位置", rec['antenna_position'])
 
-                # Task 1: 修改时也要能改 MAX/MIN/AV
                 if is_field_db:
-                    curr_type = rec.get('data_stat_type', 'MAX') or 'MAX'  # 防止None
+                    curr_type = rec.get('data_stat_type', 'MAX') or 'MAX'
                     idx_type = ["MAX", "MIN", "AV"].index(curr_type) if curr_type in ["MAX", "MIN", "AV"] else 0
                     new_type = c2.selectbox("数据类型", ["MAX", "MIN", "AV"], index=idx_type)
 
@@ -677,7 +629,15 @@ def main():
         st.header(f"{database_type} - 删除")
         records = query_records(conn, table_name)
         if records:
-            sel_id = st.selectbox("选择要删除的ID", [r['id'] for r in records])
+            # --- 修改处：创建ID到模型名称的映射，并在下拉框中显示 ---
+            record_map = {r['id']: r['aircraft_model'] for r in records}
+            sel_id = st.selectbox(
+                "选择要删除的ID",
+                [r['id'] for r in records],
+                format_func=lambda x: f"ID: {x} | 机型: {record_map.get(x, '未知')}"  # 使用 ID + 模型名称
+            )
+            # ----------------------------------------------------
+
             if st.button("确认删除"):
                 delete_record(conn, table_name, sel_id)
         else:
