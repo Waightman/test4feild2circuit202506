@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from io import StringIO
 import os
 import re
+import zipfile  # <--- 新增
+import numpy as np  # <--- 新增
+import io  # 新增 io 用于 zip 处理
 import time  # 1. 引入time模块，用于UI延时
 
 # ================= 配置部分 =================
@@ -130,7 +133,7 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
         frequencies_mhz = frequencies.apply(lambda x: convert_to_mhz(x, frequency_unit))
 
         if table_name == "induced_current":
-            min_freq, max_freq = 0.2, 1400
+            min_freq, max_freq = 0.5, 400
             data_type = "感应电流"
         else:  # induced_field
             min_freq, max_freq = 100, 8000
@@ -355,7 +358,7 @@ def main():
 
     # 侧边栏
     st.sidebar.title("导航")
-    menu = ["感应电流数据库 (0.2MHz~1400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
+    menu = ["感应电流数据库 (0.5MHz~400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
     database_type = st.sidebar.selectbox("数据库选择", menu)
 
     if 'prev_database_type' not in st.session_state:
@@ -384,8 +387,11 @@ def main():
     operation = st.sidebar.radio("选择操作", ("查询数据", "添加数据", "修改数据", "删除数据"))
 
     # ================= 1. 查询数据 =================
+    # ================= 1. 查询数据 =================
     if operation == "查询数据":
         st.header(f"{database_type} - 查询")
+
+        # --- A. 查询条件输入区域 ---
         col1, col2, col3 = st.columns(3)
         with col1:
             aircraft_model = st.text_input("飞机型号", "")
@@ -397,6 +403,7 @@ def main():
             else:
                 data_stat = None
 
+        # --- B. 执行查询 ---
         if st.button("查询"):
             cond = {}
             if aircraft_model: cond["aircraft_model"] = aircraft_model
@@ -410,29 +417,95 @@ def main():
             st.session_state.records = records
             st.session_state.selected_id = None
 
+        # --- C. 结果显示与批量操作 ---
         if st.session_state.records:
-            df = pd.DataFrame(st.session_state.records)
-            if 'data_content' in df.columns: df = df.drop(columns=['data_content'])
-            st.dataframe(df, use_container_width=True)
+            df_origin = pd.DataFrame(st.session_state.records)
 
-            # 详情查看
-            record_ids = [r['id'] for r in st.session_state.records]
+            # 1. 准备显示数据：添加"选择"列，移除大文本列以免卡顿
+            df_display = df_origin.copy()
+            if 'data_content' in df_display.columns:
+                df_display = df_display.drop(columns=['data_content'])
+            df_display.insert(0, "选择", False)
+
+            st.markdown("### 📊 数据列表 (请勾选需要下载的数据)")
+
+            # 2. 使用 data_editor 进行交互
+            edited_df = st.data_editor(
+                df_display,
+                column_config={
+                    "选择": st.column_config.CheckboxColumn("选择", help="勾选以加入批量下载", default=False),
+                    "id": st.column_config.NumberColumn("ID", disabled=True),
+                    "aircraft_model": st.column_config.TextColumn("飞机型号", disabled=True),
+                    # 其他列保持默认
+                },
+                disabled=["id", "aircraft_model", "current_probe_position", "receiving_antenna_position"],
+                hide_index=True,
+                use_container_width=True
+            )
+
+            # 3. 获取选中行
+            selected_rows = edited_df[edited_df["选择"] == True]
+
+            # 4. 批量下载逻辑
+            with st.expander("📦 批量下载操作区", expanded=True):
+                col_btn, col_info = st.columns([1, 2])
+                with col_info:
+                    st.info(f"当前筛选结果共 {len(df_origin)} 条，您已勾选 **{len(selected_rows)}** 条。")
+
+                with col_btn:
+                    if st.button("生成选中数据的压缩包 (ZIP)"):
+                        if selected_rows.empty:
+                            st.error("请先在上方表格中至少勾选一条数据！")
+                        else:
+                            zip_buffer = io.BytesIO()
+                            file_count = 0
+
+                            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                                for index, row in selected_rows.iterrows():
+                                    # 回溯原始记录以获取 data_content
+                                    original_record = df_origin[df_origin['id'] == row['id']].iloc[0]
+
+                                    # 复用你原有的 generate_download_file 函数生成标准文件名
+                                    fname, fcontent = generate_download_file(original_record, table_name)
+
+                                    if fcontent:
+                                        zip_file.writestr(fname, fcontent)
+                                        file_count += 1
+
+                            zip_buffer.seek(0)
+                            if file_count > 0:
+                                st.success(f"成功打包 {file_count} 个文件！")
+                                st.download_button(
+                                    label="⬇️ 点击下载 ZIP压缩包",
+                                    data=zip_buffer,
+                                    file_name="hirf_data_batch.zip",
+                                    mime="application/zip"
+                                )
+                            else:
+                                st.warning("选中的记录数据为空。")
+
+            st.markdown("---")
+
+            # --- D. 单条详情查看与增强绘图 ---
+            st.subheader("详细数据视图 (单条查看)")
+
             # 建立 ID -> 机型 映射
             id_map = {r['id']: r['aircraft_model'] for r in st.session_state.records}
 
             selected_id = st.selectbox(
                 "选择ID查看详情",
-                record_ids,
+                [r['id'] for r in st.session_state.records],
                 format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
             )
 
             if selected_id:
                 rec = next(r for r in st.session_state.records if r['id'] == selected_id)
-                st.markdown("---")
+
+                # 显示基础信息
                 c1, c2 = st.columns(2)
+                pos_key = 'current_probe_position' if not is_field_db else 'receiving_antenna_position'
                 with c1:
                     st.write(f"**型号**: {rec['aircraft_model']}")
-                    pos_key = 'current_probe_position' if not is_field_db else 'receiving_antenna_position'
                     st.write(f"**{probe_label}**: {rec[pos_key]}")
                     if is_field_db:
                         st.write(f"**数据类型**: {rec.get('data_stat_type', 'N/A')}")
@@ -440,10 +513,66 @@ def main():
                     st.write(f"**天线位置**: {rec['antenna_position']}")
                     st.write(f"**极化**: {rec['antenna_polarization']}")
 
-                plot_data(rec['data_content'], f"{rec['aircraft_model']} - {rec[pos_key]}", ylabel)
+                # --- 增强绘图区域 ---
+                data_content = rec['data_content']
+                if data_content:
+                    try:
+                        # 解析数据
+                        data = pd.read_csv(StringIO(data_content), sep='\t' if '\t' in data_content else ',',
+                                           header=None)
+                        x_data = pd.to_numeric(data.iloc[:, 0], errors='coerce')
+                        y_data = pd.to_numeric(data.iloc[:, 1], errors='coerce')
+                        mask = x_data.notna() & y_data.notna()
+                        x_clean = x_data[mask]
+                        y_clean = y_data[mask]
 
+                        if not x_clean.empty:
+                            st.markdown("#### 波形显示设置")
+                            col_opt1, col_opt2 = st.columns([1, 2])
+
+                            # 选项1: 线性 vs 对数
+                            with col_opt1:
+                                plot_scale = st.radio("显示模式", ["线性显示", "对数显示 (dB)"], horizontal=True)
+
+                            # 选项2: 对数系数
+                            log_factor = 20
+                            with col_opt2:
+                                if "对数" in plot_scale:
+                                    log_option = st.selectbox("对数系数 (N * log10)", [20, 10, "自定义"])
+                                    if log_option == "自定义":
+                                        log_factor = st.number_input("输入系数", value=20.0)
+                                    else:
+                                        log_factor = log_option
+
+                            # 绘图逻辑
+                            fig, ax = plt.subplots(figsize=(10, 5))
+
+                            if "对数" in plot_scale:
+                                # dB 计算公式: N * log10(|y|)
+                                y_array = np.array(y_clean)
+                                eps = 1e-10  # 防止 log(0)
+                                y_plot = log_factor * np.log10(np.abs(y_array) + eps)
+                                ax.plot(x_clean, y_plot, color='tab:red', linewidth=1)
+                                ylabel_suffix = f"(dB, N={log_factor})"
+                            else:
+                                ax.plot(x_clean, y_clean, color='tab:blue', linewidth=1)
+                                ylabel_suffix = ""
+
+                            ax.set_xlabel(f"Frequency ({rec.get('frequency_unit', 'MHz')})")
+                            ax.set_ylabel(f"{ylabel} {ylabel_suffix}")
+                            ax.set_title(f"{rec['aircraft_model']} - {rec[pos_key]}")
+                            ax.grid(True, linestyle='--', alpha=0.6, which='both')
+                            st.pyplot(fig)
+                        else:
+                            st.warning("数据解析为空，无法绘图。")
+                    except Exception as e:
+                        st.error(f"绘图出错: {e}")
+                else:
+                    st.warning("无数据内容。")
+
+                # 单文件下载
                 fname, fcontent = generate_download_file(rec, table_name)
-                st.download_button("📥 下载数据文件", fcontent, fname)
+                st.download_button("📥 下载该数据文件", fcontent, fname)
 
     # ================= 2. 添加数据 (含批量) =================
     elif operation == "添加数据":
@@ -525,7 +654,7 @@ def main():
                             probe_label: smart["position"],
                             "实验天线位置": smart["antenna_pos"],
                             "极化方式": smart["polarization"],
-                            "频率单位": "MHz" if not is_field_db else "GHz",
+                            "频率单位": "MHz" if not is_field_db else "MHz",
                             "备注": "批量导入"
                         }
                         if is_field_db:

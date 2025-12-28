@@ -9,6 +9,7 @@ from streamlit import session_state as state
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
+
 # 读取配置文件
 def read_config():
     config = configparser.ConfigParser()
@@ -25,13 +26,16 @@ def read_config():
                 'host': '0.0.0.0',
                 'port': '8501'
             }
+            # 注意：这里定义了默认权限
             config['USERS'] = {
                 'admin': 'admin123:all',
-                'engineer': 'eng123:field2circuit,spice_configure'
+                # 如果普通工程师也需要访问新数据库，请在后面加上 database4aircraft4
+                'engineer': 'eng123:field2circuit,database4aircraft4'
             }
             with open('config.ini', 'w') as f:
                 config.write(f)
     return config
+
 
 # 从配置文件加载用户凭据
 def load_credentials(config):
@@ -46,6 +50,7 @@ def load_credentials(config):
         }
     return credentials
 
+
 # 获取服务器配置
 def get_server_config(config):
     return {
@@ -53,23 +58,28 @@ def get_server_config(config):
         "port": config['SERVER'].getint('port', 8501)
     }
 
+
 # 读取配置
 config = read_config()
 USER_CREDENTIALS = load_credentials(config)
 SERVER_CONFIG = get_server_config(config)
+
 
 def image_to_base64(image_path):
     """将图片转换为base64编码"""
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
+
 LOGO_PATH = "company_logo.jpg"
+
 
 def login_page():
     # 检查图片是否存在
     if not os.path.exists(LOGO_PATH):
-        st.error("公司logo图片未找到，请确保company_logo.jpg文件存在")
+        # 即使没有Logo也不报错，只提示
         logo_html = ""
+        st.warning(f"提示: 未找到 {LOGO_PATH}，将不显示Logo。")
     else:
         logo_base64 = image_to_base64(LOGO_PATH)
         logo_html = f"""
@@ -78,9 +88,9 @@ def login_page():
             <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
         </div>
         """
+        st.markdown(logo_html, unsafe_allow_html=True)
 
     # 登录页面布局
-    st.markdown(logo_html, unsafe_allow_html=True)
     st.title("飞机电磁设计系统登录")
 
     with st.form("login_form"):
@@ -97,6 +107,7 @@ def login_page():
             else:
                 st.error("用户名或密码错误")
 
+
 def main_app():
     # 用户信息和登出按钮
     st.sidebar.write(f"当前用户: {st.session_state.current_user}")
@@ -106,25 +117,49 @@ def main_app():
         st.session_state.pop('user_access', None)
         st.rerun()
 
-    # 根据用户权限过滤可访问的页面
-    available_pages = []
+    # --- 核心修改部分开始 ---
+
+    # 1. 定义页面对象
+    # 确保 page/ 文件夹下有对应的 .py 文件
     page1 = st.Page("page/feild2circuit.py", title="场路转换")
+    # page2 (spice_configure) 在你的代码中未定义 st.Page，暂时忽略
     page3 = st.Page("page/database4aircraft.py", title="复合材料飞机结构电磁屏蔽设计数据库系统设计")
     page4 = st.Page("page/database4aircraft2.py", title="飞机雷电分区和雷电间击环境数据库")
     page5 = st.Page("page/database4aircraft3.py", title="飞机HIRF环境数据库")
-    all_pages = [page1, page3, page4, page5]
-    page_names = ["field2circuit", "spice_configure", "database4aircraft", "database4aircraft2", "database4aircraft3"]
+    page6 = st.Page("page/database4aircraft4.py", title="飞机HIRF环境实验数据库")  # 新增页面
 
+    # 2. 建立权限名到页面对象的映射字典 (比列表索引更安全)
+    # 字典的 Key 对应 config.ini 中的权限名称
+    page_map = {
+        "field2circuit": page1,
+        "database4aircraft": page3,
+        "database4aircraft2": page4,
+        "database4aircraft3": page5,
+        "database4aircraft4": page6
+        # "spice_configure": pageX  <-- 如果你有对应的页面文件，请在这里添加
+    }
+
+    available_pages = []
+
+    # 3. 权限判断逻辑
     if "all" in st.session_state.user_access:
-        available_pages = all_pages
+        # 如果是管理员(all)，显示字典中定义的所有页面
+        available_pages = list(page_map.values())
     else:
-        for i, name in enumerate(page_names):
-            if name in st.session_state.user_access:
-                available_pages.append(all_pages[i])
+        # 遍历用户拥有的权限，如果权限在字典中有对应页面，则添加
+        for permission in st.session_state.user_access:
+            if permission in page_map:
+                available_pages.append(page_map[permission])
+
+    # --- 核心修改部分结束 ---
 
     # 显示导航栏
-    pg = st.navigation(available_pages)
-    pg.run()
+    if available_pages:
+        pg = st.navigation(available_pages)
+        pg.run()
+    else:
+        st.error("您没有任何页面的访问权限，请联系管理员。")
+
 
 def main():
     # 根据认证状态显示不同内容
@@ -132,6 +167,7 @@ def main():
         login_page()
     else:
         main_app()
+
 
 if __name__ == "__main__":
     # 保存原始sys.argv
