@@ -1661,111 +1661,106 @@ def delete_indirect_effect():
 
 
 def batch_add_indirect_effects():
-    st.markdown("### 批量数据文件导入")
-    st.info("提示：系统会自动根据文件名猜测参数（如：AG600_TP1_电流_kA.dat）。您可以在下方表格中批量修正后提交。")
+    st.markdown("### 批量数据文件导入 (.dat / .txt)")
+    st.info("💡 提示：支持标准模式（8段）或全字段模式（10段，含电流入/出点及远端连接器）。\n"
+            "例如：**AG600_TP01_LeftWing_Conn2_A波激励_A波感应_线束_电流_mA_时域.dat**")
 
     # 1. 文件上传
-    uploaded_files = st.file_uploader("选择数据文件 (支持多选)", type=["txt", "dat"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("将文件拖拽至此 (支持多选)", type=["txt", "dat"], accept_multiple_files=True)
 
     if not uploaded_files:
-        # 如果用户取消了选择，清除缓存，避免下次显示旧数据
         if 'batch_data_cache' in st.session_state:
             del st.session_state['batch_data_cache']
         return
 
-    # === 关键步骤：建立映射字典 ===
-    # 将文件名映射到文件对象，解决 PyArrow 无法序列化 UploadedFile 的问题
+    # 建立文件映射
     file_map = {file.name: file for file in uploaded_files}
 
-    # 2. 解析逻辑 (带缓存，防止每次点击页面都重置表格)
-    # 只有当缓存不存在，或者缓存的文件数量与当前上传不一致时，才重新解析
+    # 2. 解析逻辑 (带缓存)
     if 'batch_data_cache' not in st.session_state or len(st.session_state['batch_data_cache']) != len(uploaded_files):
         data_list = []
         for file in uploaded_files:
-            # 调用智能解析函数
+            # 调用解析函数
             smart_info = smart_parse_filename(file.name)
 
-            # 构建行数据 (只包含字符串/数字，绝对不要包含 file 对象)
+            # 构建行数据
             row_data = {
-                "文件名": file.name,  # 这是找回文件对象的 Key
-                "飞机型号": smart_info.get("飞机型号", ""),
-                "测试点": smart_info.get("测试点", ""),
-                "电流入/出点": smart_info.get("电流入/出点", ""),
-                "远端连接器": smart_info.get("远端连接器", ""),
+                "文件名": file.name,
+                "飞机型号": smart_info.get("aircraft_model", ""),
+                "测试点": smart_info.get("test_point", ""),
 
-                "激励波形": smart_info.get("激励波形", "A波"),
-                "被测对象": smart_info.get("被测对象", "线束"),
-                "感应波形": smart_info.get("感应波形", "A波"),
-                "数据域": smart_info.get("数据域", "时域数据"),
-                "数据类型": smart_info.get("数据类型", "voltage"),
-                "单位": smart_info.get("单位", "V"),
+                # === 修正点：不再硬编码为空，而是读取解析结果 ===
+                "电流入/出点": smart_info.get("current_in_out", ""),
+                "远端连接器": smart_info.get("voltage_probe_point", ""),
+                # ============================================
 
-                "描述": "批量导入"
+                "激励波形": smart_info.get("waveform_type", "A波"),
+                "感应波形": smart_info.get("induced_waveform", "A波"),
+                "被测对象": smart_info.get("test_object_type", "线束"),
+
+                "数据域": smart_info.get("data_domain", "时域数据"),
+                "数据类型": smart_info.get("data_type", "voltage"),
+                "单位": smart_info.get("data_unit", "V"),
+                "描述": smart_info.get("description", "")
             }
             data_list.append(row_data)
 
         st.session_state['batch_data_cache'] = pd.DataFrame(data_list)
 
-    # 3. 显示可编辑表格
     df = st.session_state['batch_data_cache']
 
-    # 配置列编辑器 (Dropdowns 等)
+    # 3. 配置可编辑表格
     column_config = {
-        "文件名": st.column_config.TextColumn("文件名", disabled=True, width="medium"),  # 禁止改文件名
-        "飞机型号": st.column_config.TextColumn("飞机型号", required=True),
-        "测试点": st.column_config.TextColumn("测试点", required=True),
+        "文件名": st.column_config.TextColumn("文件名", disabled=True, help="原始文件名"),
+        "飞机型号": st.column_config.TextColumn("飞机型号*", required=True),
+        "测试点": st.column_config.TextColumn("测试点*", required=True),
+        # 这两个字段现在会自动填入，但也允许用户修改
+        "电流入/出点": st.column_config.TextColumn("电流入/出点"),
+        "远端连接器": st.column_config.TextColumn("远端连接器"),
         "激励波形": st.column_config.SelectboxColumn("激励波形", options=["A波", "H波"], required=True),
-        "被测对象": st.column_config.SelectboxColumn("被测对象", options=["线束", "针脚"], required=True),
         "感应波形": st.column_config.SelectboxColumn("感应波形", options=["A波", "H波"], required=True),
+        "被测对象": st.column_config.SelectboxColumn("被测对象", options=["线束", "针脚"], required=True),
         "数据域": st.column_config.SelectboxColumn("数据域", options=["时域数据", "频域数据"], required=True),
-        "数据类型": st.column_config.SelectboxColumn("数据类型", options=["voltage", "current"], required=True),
+        "数据类型": st.column_config.SelectboxColumn("类型", options=["voltage", "current"], required=True),
         "单位": st.column_config.SelectboxColumn("单位", options=["V", "kV", "mV", "A", "kA", "mA"], required=True),
+        "描述": st.column_config.TextColumn("描述")
     }
 
-    st.markdown("⬇️ **请确认并完善下方信息 (支持Excel式拖拽修改):**")
+    st.markdown("⬇️ **预览与修正 (请在下方表格确认自动识别结果):**")
     edited_df = st.data_editor(
         df,
         column_config=column_config,
         use_container_width=True,
-        num_rows="fixed",  # 禁止用户在表格里增加空行，必须通过上传文件增加
-        hide_index=True
+        hide_index=True,
+        num_rows="fixed"
     )
 
     # 4. 提交逻辑
-    if st.button(f"确认导入 {len(uploaded_files)} 条数据", type="primary"):
+    if st.button(f"🚀 确认入库 ({len(uploaded_files)} 个文件)", type="primary"):
         success_count = 0
         fail_count = 0
-
         conn = create_connection()
         cursor = conn.cursor()
 
         progress_bar = st.progress(0)
-        status_text = st.empty()
 
         try:
-            total_rows = len(edited_df)
+            total = len(edited_df)
             for index, row in edited_df.iterrows():
-                # 更新进度
-                progress = (index + 1) / total_rows
-                progress_bar.progress(progress)
-                status_text.text(f"正在处理: {row['文件名']}...")
+                progress_bar.progress((index + 1) / total)
 
-                # 必填检查
+                # 必填校验
                 if not row["飞机型号"] or not row["测试点"]:
-                    st.toast(f"跳过: {row['文件名']} (缺少型号或测试点)", icon="⚠️")
+                    st.toast(f"文件 {row['文件名']} 缺少飞机型号或测试点，已跳过。", icon="⚠️")
                     fail_count += 1
                     continue
 
-                # === 核心：从 map 中找回文件对象 ===
-                file_name_key = row["文件名"]
-                file_obj = file_map.get(file_name_key)
-
-                if file_obj is None:
-                    st.error(f"严重错误：找不到原始文件 {file_name_key}")
+                # 获取文件二进制流
+                file_obj = file_map.get(row["文件名"])
+                if not file_obj:
                     fail_count += 1
                     continue
 
-                # 读取文件内容
                 file_obj.seek(0)
                 data_bytes = file_obj.read()
 
@@ -1777,126 +1772,155 @@ def batch_add_indirect_effects():
                             data_type, data_unit, description, data_domain
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                         (
-                            row["飞机型号"], row["测试点"], row["电流入/出点"], row["远端连接器"],
-                            row["激励波形"], row["感应波形"], row["被测对象"], data_bytes,
-                            row["数据类型"], row["单位"], row["描述"], row["数据域"]
+                            row["飞机型号"],
+                            row["测试点"],
+                            row["电流入/出点"],  # 现在这里会有值了
+                            row["远端连接器"],  # 这里也会有值了
+                            row["激励波形"],
+                            row["感应波形"],
+                            row["被测对象"],
+                            data_bytes,
+                            row["数据类型"],
+                            row["单位"],
+                            row["描述"],
+                            row["数据域"]
                         )
                     )
                     success_count += 1
                 except Exception as e:
-                    st.error(f"导入 {row['文件名']} 数据库写入失败: {e}")
+                    print(e)
                     fail_count += 1
 
             conn.commit()
 
-            # 结果反馈
             if success_count > 0:
                 st.balloons()
-                st.success(f"处理完成！成功导入: {success_count} 条，失败: {fail_count} 条。")
+                st.success(f"操作完成！成功导入 {success_count} 条数据。")
+                if fail_count > 0:
+                    st.warning(f"有 {fail_count} 条数据因信息不全导入失败。")
 
-                # 清除缓存，以便用户可以进行下一批次上传
                 if 'batch_data_cache' in st.session_state:
                     del st.session_state['batch_data_cache']
-
-                # 可选：稍微延迟后刷新页面以清空文件上传器
-                # import time
-                # time.sleep(2)
-                # st.rerun()
             else:
-                st.error("所有文件均导入失败，请检查数据格式。")
+                st.error("导入失败，请检查表格数据是否完整。")
 
         except Exception as e:
-            st.error(f"发生未预期的错误: {e}")
+            st.error(f"数据库错误: {e}")
         finally:
             conn.close()
-            status_text.empty()
+            progress_bar.empty()
 
 
 
 def smart_parse_filename(filename):
     """
-    智能解析文件名 (升级版)
-    针对格式如: A波激励H波感应电流_C50_频域.dat
+    智能解析文件名 (升级版：支持标准8段式 和 扩展10段式)
+
+    模式1 (标准): 飞机型号_测试点_激励_感应_对象_类型_单位_域.dat
+    模式2 (全量): 飞机型号_测试点_电流入出点_远端连接器_激励_感应_对象_类型_单位_域.dat
     """
     name_no_ext = filename.rsplit('.', 1)[0]
     parts = name_no_ext.split('_')
 
     info = {}
+    full_str = name_no_ext.upper()
 
-    # === A. 基础位置解析 ===
-    # 假设格式较为固定，但也做好了越界保护
-    # 注意：根据你的报错文件名，第一段很长 "A波激励H波感应电流"，它包含了大量信息
-    # 真正的 "飞机型号" 似乎没在文件名的第一段体现？或者第一段就是 "A波..."？
-    # 如果文件名是 "A波激励H波感应电流_C50_频域.dat"
-    # parts[0] = "A波激励H波感应电流"
-    # parts[1] = "C50" (可能是测试点?)
-    # parts[2] = "频域"
+    # === 1. 位置解析 (核心修改点) ===
 
-    # 针对你给出的文件名样例进行特殊适配：
-    if len(parts) >= 2:
-        info["测试点"] = parts[1]  # 假设 C50 是测试点
+    # 初始化默认值
+    info["aircraft_model"] = ""
+    info["test_point"] = ""
+    info["current_in_out"] = ""  # 默认空
+    info["voltage_probe_point"] = ""  # 默认空
 
-    # === B. 正则表达式精确提取 (核心优化) ===
+    if len(parts) >= 10:
+        # >>> 命中全字段模式 (10段式) <<<
+        # 约定顺序: 型号(0)_测试点(1)_入出点(2)_远端(3)_激励(4)_感应(5)_对象(6)_类型(7)_单位(8)_域(9)
+        info["aircraft_model"] = parts[0]
+        info["test_point"] = parts[1]
+        info["current_in_out"] = parts[2]  # 解析电流入/出点
+        info["voltage_probe_point"] = parts[3]  # 解析远端连接器
 
-    # 1. 提取 激励波形 (匹配 "X波激励" 前面的 X波)
-    match_exc = re.search(r'([A-Za-z]波)激励', name_no_ext)
-    if match_exc:
-        # 提取出来可能是 "A波" 或 "H波"
-        info["激励波形"] = match_exc.group(1).upper()  # 自动转大写，防止 "h波"
+    elif len(parts) >= 2:
+        # >>> 命中标准模式 (通常8段) <<<
+        # 约定顺序: 型号(0)_测试点(1)... 后续靠关键词
+        info["aircraft_model"] = parts[0]
+        info["test_point"] = parts[1]
+
     else:
-        # 如果没写“激励”，但文件名包含 A波/H波，再尝试兜底
-        if "A波" in name_no_ext and "H波" not in name_no_ext:
-            info["激励波形"] = "A波"
-        elif "H波" in name_no_ext and "A波" not in name_no_ext:
-            info["激励波形"] = "H波"
+        # 只有一段的情况
+        info["aircraft_model"] = name_no_ext
+
+    # === 2. 关键词智能修正 (保持原有逻辑，用于提取波形、单位等) ===
+    # 即使位置解析提取了部分信息，这里的关键词逻辑可以作为双重确认或补全
+
+    # --- 激励波形 ---
+    if "A波激励" in name_no_ext or ("A波" in name_no_ext and "激励" in name_no_ext):
+        info["waveform_type"] = "A波"
+    elif "H波激励" in name_no_ext or ("H波" in name_no_ext and "激励" in name_no_ext):
+        info["waveform_type"] = "H波"
+    else:
+        # 模糊匹配逻辑
+        if "A波" in name_no_ext and "A波感应" not in name_no_ext:
+            info["waveform_type"] = "A波"
+        elif "H波" in name_no_ext and "H波感应" not in name_no_ext:
+            info["waveform_type"] = "H波"
         else:
-            info["激励波形"] = "A波"  # 默认
+            info["waveform_type"] = "A波"
 
-    # 2. 提取 感应波形 (匹配 "X波感应" 前面的 X波)
-    match_ind = re.search(r'([A-Za-z]波)感应', name_no_ext)
-    if match_ind:
-        info["感应波形"] = match_ind.group(1).upper()
+    # --- 感应波形 ---
+    if "A波感应" in name_no_ext:
+        info["induced_waveform"] = "A波"
+    elif "H波感应" in name_no_ext:
+        info["induced_waveform"] = "H波"
     else:
-        # 如果没明确写“感应”，默认与激励相同
-        info["感应波形"] = info.get("激励波形", "A波")
+        info["induced_waveform"] = info.get("waveform_type", "A波")
 
-    # 3. 提取 被测对象
-    if "线束" in name_no_ext or "Cable" in name_no_ext:
-        info["被测对象"] = "线束"
-    elif "针脚" in name_no_ext or "Pin" in name_no_ext:
-        info["被测对象"] = "针脚"
+    # --- 被测对象 ---
+    if "线束" in name_no_ext or "CABLE" in full_str:
+        info["test_object_type"] = "线束"
+    elif "针脚" in name_no_ext or "PIN" in full_str:
+        info["test_object_type"] = "针脚"
     else:
-        info["被测对象"] = "线束"
+        info["test_object_type"] = "线束"
 
-    # 4. 提取 数据域
-    if "频域" in name_no_ext:
-        info["数据域"] = "频域数据"
+    # --- 数据域 ---
+    if "频域" in name_no_ext or "FREQ" in full_str:
+        info["data_domain"] = "频域数据"
     else:
-        info["数据域"] = "时域数据"
+        info["data_domain"] = "时域数据"
 
-    # 5. 提取 数据类型 & 单位
-    if "电压" in name_no_ext or "Voltage" in name_no_ext:
-        info["数据类型"] = "voltage"
-        if "kV" in name_no_ext:
-            info["单位"] = "kV"
-        elif "mV" in name_no_ext:
-            info["单位"] = "mV"
-        else:
-            info["单位"] = "V"
-
-    elif "电流" in name_no_ext or "Current" in name_no_ext:
-        info["数据类型"] = "current"
-        if "kA" in name_no_ext:
-            info["单位"] = "kA"
-        elif "mA" in name_no_ext:
-            info["单位"] = "mA"
-        else:
-            info["单位"] = "A"
+    # --- 数据类型 ---
+    if "电压" in name_no_ext or "VOLTAGE" in full_str:
+        info["data_type"] = "voltage"
+    elif "电流" in name_no_ext or "CURRENT" in full_str:
+        info["data_type"] = "current"
     else:
-        info["数据类型"] = "current"  # 根据你的文件名 "感应电流"，默认设为 current 更合理
-        info["单位"] = "A"
+        info["data_type"] = "voltage"
+
+    # --- 单位 ---
+    info["data_unit"] = "V"  # 默认值
+    if info["data_type"] == "voltage":
+        if "KV" in full_str:
+            info["data_unit"] = "kV"
+        elif "MV" in full_str:
+            info["data_unit"] = "mV"
+        elif "V" in full_str:
+            info["data_unit"] = "V"
+    else:
+        if "KA" in full_str:
+            info["data_unit"] = "kA"
+        elif "MA" in full_str:
+            info["data_unit"] = "mA"
+        elif "A" in full_str:
+            info["data_unit"] = "A"
+
+    # 最后的兜底：如果描述为空，标记一下
+    info["description"] = "批量导入"
 
     return info
+
+
 # 关于页面
 def about_page():
     st.header("关于")

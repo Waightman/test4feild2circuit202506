@@ -51,7 +51,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS hirf_experiments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         aircraft_model TEXT NOT NULL,
-        test_method TEXT,      -- 新增: 测试方法 (如 LLSF, BCI, Direct Drive)
+        connector_number TEXT, -- <--- 新增: 连接器编号
+        test_method TEXT,
         frequency_range TEXT,
         field_strength TEXT,
         description TEXT,
@@ -66,8 +67,14 @@ def init_db():
         cursor.execute("ALTER TABLE hirf_experiments ADD COLUMN test_method TEXT")
         print("已添加字段: test_method")
 
+    # --- 数据库迁移: 检查并添加 connector_number 字段 (本次新增) ---
+    try:
+        cursor.execute("SELECT connector_number FROM hirf_experiments LIMIT 1")
+    except sqlite3.OperationalError:
+        cursor.execute("ALTER TABLE hirf_experiments ADD COLUMN connector_number TEXT")
+        print("已添加字段: connector_number")
+
     # 2. HIRF 实验图片/数据表
-    # 注意：我们将 raw_data 放在这里，因为往往一张图对应一份特定的测试数据
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS hirf_experiment_images (
         img_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,8 +82,8 @@ def init_db():
         image_name TEXT,
         image_desc TEXT,
         image_data BLOB,
-        raw_data BLOB,         -- 新增: 用于存储生成该图片的原始数据文件(.csv/.xlsx/.dat)
-        raw_data_name TEXT,    -- 新增: 原始文件名
+        raw_data BLOB,
+        raw_data_name TEXT,
         upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (exp_id) REFERENCES hirf_experiments (id) ON DELETE CASCADE
     )
@@ -105,12 +112,15 @@ def view_hirf_experiments():
 
     # --- 搜索栏 ---
     with st.container(border=True):
-        col1, col2, col3 = st.columns(3)
+        # 改为4列布局，加入连接器编号搜索
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             search_model = st.text_input("飞机型号", placeholder="如: AG600")
         with col2:
-            search_method = st.selectbox("测试方法", ["所有", "LLSF", "BCI", "Direct Drive", "其他"], index=0)
+            search_connector = st.text_input("连接器编号", placeholder="如: J1201")  # <--- 新增
         with col3:
+            search_method = st.selectbox("测试方法", ["所有", "LLSF", "BCI", "Direct Drive", "其他"], index=0)
+        with col4:
             search_freq = st.text_input("频段", placeholder="如: 100MHz")
 
     # 初始化 session state
@@ -125,6 +135,12 @@ def view_hirf_experiments():
         if search_model:
             query += " AND aircraft_model LIKE ?"
             params.append(f"%{search_model}%")
+
+        # <--- 新增查询逻辑
+        if search_connector:
+            query += " AND connector_number LIKE ?"
+            params.append(f"%{search_connector}%")
+
         if search_method and search_method != "所有":
             query += " AND test_method = ?"
             params.append(search_method)
@@ -145,8 +161,10 @@ def view_hirf_experiments():
         if df.empty:
             st.warning("没有找到匹配的记录")
         else:
+            # 在表格中展示连接器编号
             st.dataframe(
-                df[['id', 'aircraft_model', 'test_method', 'frequency_range', 'field_strength', 'upload_date']],
+                df[['id', 'aircraft_model', 'connector_number', 'test_method', 'frequency_range', 'field_strength',
+                    'upload_date']],
                 use_container_width=True,
                 hide_index=True
             )
@@ -159,7 +177,7 @@ def view_hirf_experiments():
                 "选择记录查看详情:",
                 df['id'],
                 format_func=lambda
-                    x: f"ID:{x} | {df[df['id'] == x]['aircraft_model'].iloc[0]} - {df[df['id'] == x]['test_method'].iloc[0] or '未分类'}"
+                    x: f"ID:{x} | {df[df['id'] == x]['aircraft_model'].iloc[0]} - {df[df['id'] == x]['connector_number'].iloc[0] or 'No-Conn'}"
             )
 
             if selected_id:
@@ -167,11 +185,13 @@ def view_hirf_experiments():
 
                 # 1. 基础信息卡片
                 with st.container(border=True):
-                    c1, c2, c3, c4 = st.columns(4)
+                    # 布局调整为 3列 x 2行 或者 灵活布局，这里用5列
+                    c1, c2, c3, c4, c5 = st.columns(5)
                     c1.markdown(f"**飞机型号:**\n{record['aircraft_model']}")
-                    c2.markdown(f"**测试方法:**\n{record['test_method'] or '未填写'}")
-                    c3.markdown(f"**频率范围:**\n{record['frequency_range']}")
-                    c4.markdown(f"**场强等级:**\n{record['field_strength']}")
+                    c2.markdown(f"**连接器编号:**\n{record['connector_number'] or '未填写'}")  # <--- 新增显示
+                    c3.markdown(f"**测试方法:**\n{record['test_method'] or '未填写'}")
+                    c4.markdown(f"**频率范围:**\n{record['frequency_range']}")
+                    c5.markdown(f"**场强等级:**\n{record['field_strength']}")
 
                     st.markdown(f"**实验综述:** {record['description'] or '无'}")
 
@@ -189,10 +209,9 @@ def view_hirf_experiments():
                     st.markdown(f"#### 📎 实验附件 ({len(img_df)})")
 
                     for idx, row in img_df.iterrows():
-                        # 使用 expander 包裹每张图，方便收起/展开，且默认可以看大图
                         with st.expander(f"附件 {idx + 1}: {row['image_name']}", expanded=True):
 
-                            col_img, col_info = st.columns([2, 1])  # 图片占 2/3 宽度，保证曲线清晰
+                            col_img, col_info = st.columns([2, 1])
 
                             with col_img:
                                 if row['image_data']:
@@ -209,7 +228,6 @@ def view_hirf_experiments():
                                 st.write(row['image_desc'] or "暂无描述")
 
                                 st.divider()
-                                # 下载原始数据按钮
                                 if row['raw_data']:
                                     file_name = row['raw_data_name'] or f"raw_data_{row['img_id']}.dat"
                                     size_kb = len(row['raw_data']) / 1024
@@ -232,14 +250,18 @@ def add_hirf_experiment():
 
     with st.form("add_hirf_form"):
         st.markdown("### 1. 实验基本信息")
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)  # 改为3列
         with col1:
             model = st.text_input("飞机型号 *", placeholder="如: AG600")
-            # 增加测试方法选择，适配你的 LLSF 图片
             method = st.selectbox("测试方法", ["LLSF", "BCI", "Direct Drive", "Reverberation Chamber", "其他"])
         with col2:
+            # <--- 新增输入框
+            connector_num = st.text_input("连接器编号", placeholder="如: P1201-J1")
             freq = st.text_input("频率范围", placeholder="如: 10kHz - 400MHz")
+        with col3:
             field = st.text_input("场强等级", placeholder="如: 100 V/m")
+            # 占位，保持布局整齐
+            st.write("")
 
         desc = st.text_area("实验整体综述", placeholder="描述实验配置、环境、通过判据等...")
 
@@ -263,7 +285,6 @@ def add_hirf_experiment():
 
                 uploaded_data.append((f_img, f_raw, name, d_txt))
 
-        # 动态增删按钮
         col_add, col_remove = st.columns([1, 8])
         with col_add:
             if st.form_submit_button("➕ 增加附件"):
@@ -285,12 +306,12 @@ def add_hirf_experiment():
             conn = create_connection()
             cursor = conn.cursor()
             try:
-                # 插入主表
+                # 插入主表，加入 connector_number
                 cursor.execute(
                     '''INSERT INTO hirf_experiments 
-                       (aircraft_model, test_method, frequency_range, field_strength, description) 
-                       VALUES (?, ?, ?, ?, ?)''',
-                    (model, method, freq, field, desc)
+                       (aircraft_model, connector_number, test_method, frequency_range, field_strength, description) 
+                       VALUES (?, ?, ?, ?, ?, ?)''',
+                    (model, connector_num, method, freq, field, desc)
                 )
                 new_id = cursor.lastrowid
 
@@ -299,7 +320,6 @@ def add_hirf_experiment():
                 for f_img, f_raw, f_name, f_desc in uploaded_data:
                     if f_img:
                         img_bytes = f_img.read()
-                        # 处理原始数据
                         raw_bytes = None
                         raw_name = None
                         if f_raw:
@@ -331,21 +351,24 @@ def update_hirf_experiment():
     st.subheader("修改HIRF实验数据")
 
     conn = create_connection()
-    # 兼容旧数据的查询（如果没有 test_method 字段可能会报错，但 init_db 已处理）
+    # 兼容性查询
     try:
         df = pd.read_sql_query(
-            "SELECT id, aircraft_model, test_method, frequency_range FROM hirf_experiments ORDER BY id DESC", conn)
+            "SELECT id, aircraft_model, connector_number, test_method, frequency_range FROM hirf_experiments ORDER BY id DESC",
+            conn)
     except:
-        df = pd.read_sql_query("SELECT id, aircraft_model, frequency_range FROM hirf_experiments ORDER BY id DESC",
-                               conn)
+        # Fallback if specific columns query fails (though init_db should prevent this)
+        df = pd.read_sql_query("SELECT * FROM hirf_experiments ORDER BY id DESC", conn)
 
     if df.empty:
         st.warning("无数据可修改。")
         conn.close()
         return
 
+    # 显示信息加入连接器编号方便辨认
     selected_id = st.selectbox("选择记录:", df['id'],
-                               format_func=lambda x: f"ID:{x} - {df[df['id'] == x]['aircraft_model'].iloc[0]}")
+                               format_func=lambda
+                                   x: f"ID:{x} - {df[df['id'] == x]['aircraft_model'].iloc[0]} (Conn: {df[df['id'] == x].get('connector_number', pd.Series(['N/A'])).iloc[0]})")
 
     # 获取当前详情
     cursor = conn.cursor()
@@ -355,7 +378,6 @@ def update_hirf_experiment():
     # 获取当前图片
     img_df = pd.read_sql_query("SELECT * FROM hirf_experiment_images WHERE exp_id=?", conn, params=(selected_id,))
 
-    # Session用于新增
     if 'hirf_up_add_count' not in st.session_state:
         st.session_state['hirf_up_add_count'] = 0
 
@@ -363,7 +385,10 @@ def update_hirf_experiment():
         c1, c2 = st.columns(2)
         new_model = c1.text_input("飞机型号", value=rec_dict.get('aircraft_model'))
 
-        # 处理 test_method 回显
+        # <--- 新增修改框
+        # 使用 .get() 防止旧数据字段不存在报错（虽然init_db已处理，但为了健壮性）
+        new_connector = c1.text_input("连接器编号", value=rec_dict.get('connector_number', ''))
+
         curr_method = rec_dict.get('test_method')
         method_opts = ["LLSF", "BCI", "Direct Drive", "Reverberation Chamber", "其他"]
         m_idx = method_opts.index(curr_method) if curr_method in method_opts else 0
@@ -391,13 +416,11 @@ def update_hirf_experiment():
                         u_name = st.text_input("标题", value=row['image_name'], key=f"un_{iid}")
                         u_desc = st.text_area("描述", value=row['image_desc'], key=f"udsc_{iid}")
 
-                        # 显示当前是否有原始数据
                         if row['raw_data']:
                             st.caption(f"✅ 已包含原始数据: {row['raw_data_name']}")
                         else:
                             st.caption("❌ 无原始数据")
 
-                        # 允许覆盖上传原始数据
                         u_raw = st.file_uploader("覆盖/上传原始数据", key=f"ur_{iid}")
 
                     existing_ops[iid] = {
@@ -418,7 +441,6 @@ def update_hirf_experiment():
             new_uploads.append((nf_img, nf_raw, nf_name, nf_desc))
             st.divider()
 
-        # 动态按钮
         ca, cr = st.columns([1, 8])
         with ca:
             if st.form_submit_button("➕"):
@@ -431,19 +453,18 @@ def update_hirf_experiment():
 
         if st.form_submit_button("确认更新", type="primary"):
             try:
-                # 更新主表
+                # 更新主表，加入 connector_number
                 cursor.execute('''
                     UPDATE hirf_experiments 
-                    SET aircraft_model=?, test_method=?, frequency_range=?, field_strength=?, description=?
+                    SET aircraft_model=?, connector_number=?, test_method=?, frequency_range=?, field_strength=?, description=?
                     WHERE id=?
-                ''', (new_model, new_method, new_freq, new_field, new_desc, selected_id))
+                ''', (new_model, new_connector, new_method, new_freq, new_field, new_desc, selected_id))
 
-                # 更新现有附件
+                # 更新现有附件 (保持原逻辑)
                 for iid, ops in existing_ops.items():
                     if ops['delete']:
                         cursor.execute("DELETE FROM hirf_experiment_images WHERE img_id=?", (iid,))
                     else:
-                        # 如果上传了新数据文件，则更新数据文件，否则只更新文本
                         if ops['new_raw']:
                             r_bytes = ops['new_raw'].read()
                             r_name = ops['new_raw'].name
@@ -457,7 +478,7 @@ def update_hirf_experiment():
                                 (ops['name'], ops['desc'], iid)
                             )
 
-                # 插入新附件
+                # 插入新附件 (保持原逻辑)
                 for nf_img, nf_raw, nf_name, nf_desc in new_uploads:
                     if nf_img:
                         ib = nf_img.read()
@@ -486,7 +507,7 @@ def update_hirf_experiment():
 def delete_hirf_experiment():
     st.subheader("删除HIRF实验记录")
     conn = create_connection()
-    df = pd.read_sql_query("SELECT id, aircraft_model FROM hirf_experiments", conn)
+    df = pd.read_sql_query("SELECT id, aircraft_model, connector_number FROM hirf_experiments", conn)
 
     if df.empty:
         st.warning("无数据。")
@@ -494,7 +515,8 @@ def delete_hirf_experiment():
         return
 
     selected_id = st.selectbox("选择记录:", df['id'],
-                               format_func=lambda x: f"ID:{x} - {df[df['id'] == x]['aircraft_model'].iloc[0]}")
+                               format_func=lambda
+                                   x: f"ID:{x} - {df[df['id'] == x]['aircraft_model'].iloc[0]} (Conn: {df[df['id'] == x]['connector_number'].iloc[0]})")
 
     if st.button("确认删除"):
         try:
@@ -512,12 +534,15 @@ def delete_hirf_experiment():
 def about_page():
     st.header("关于")
     st.write("""
-    ### 飞机HIRF环境实验数据库 v2.0
+    ### 飞机HIRF环境实验数据库 v2.1
 
-    **针对图片类型优化:**
+    **本次更新:**
+    - **新增连接器编号管理**: 支持在实验记录中录入和搜索连接器编号 (Connector Number)，便于追踪线缆耦合路径。
+
+    **功能特性:**
     - 支持 LLSF, BCI 等不同测试方法的分类。
-    - 支持上传与图片对应的 **原始数据文件 (Excel/CSV/DAT)**，解决“有图无数据”的痛点。
-    - 优化了详细曲线图的显示布局，便于观察坐标轴数值。
+    - 支持上传与图片对应的 **原始数据文件 (Excel/CSV/DAT)**。
+    - 数据库自动迁移，无需手动更改表结构。
     """)
 
 
@@ -560,5 +585,5 @@ def main():
         about_page()
 
 
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 main()

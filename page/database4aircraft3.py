@@ -136,7 +136,7 @@ def validate_frequency_range(data_content, frequency_unit, table_name):
             min_freq, max_freq = 0.5, 400
             data_type = "感应电流"
         else:  # induced_field
-            min_freq, max_freq = 100, 8000
+            min_freq, max_freq = 100, 18000
             data_type = "感应电磁"
 
         f_min = frequencies_mhz.min()
@@ -358,7 +358,7 @@ def main():
 
     # 侧边栏
     st.sidebar.title("导航")
-    menu = ["感应电流数据库 (0.5MHz~400MHz)", "感应电场数据库 (100MHz~8GHz)", "关于"]
+    menu = ["感应电流数据库 (0.5MHz~400MHz)", "感应电场数据库 (100MHz~18GHz)", "关于"]
     database_type = st.sidebar.selectbox("数据库选择", menu)
 
     if 'prev_database_type' not in st.session_state:
@@ -605,7 +605,7 @@ def main():
                     st.markdown("---")
                     data_stat_type = st.selectbox("数据统计类型*", ["MAX", "MIN", "AV"])
 
-                data_file = st.file_uploader("上传数据文件 (TXT)*", type=['txt'])
+                data_file = st.file_uploader("上传数据文件 (TXT)*", type=['txt','dat'])
                 notes = st.text_area("备注", "")
 
                 if st.form_submit_button("提交单条数据"):
@@ -637,12 +637,18 @@ def main():
                                 if add_record_db(conn, table_name, record):
                                     st.success("数据添加成功！")
 
-        # --- 批量导入 ---
+
+        # --- 批量导入 (已修正：补全缺失字段) ---
         with tab_batch:
             st.markdown("### 批量数据文件导入")
+            st.info("提示：批量导入默认设置天线类型为'一般天线'，入射角为'0'。您可以在下方表格中直接修改这些值。")
+
             uploaded_files = st.file_uploader("选择多个数据文件", type=["txt", "dat"], accept_multiple_files=True)
+
             if uploaded_files:
                 file_map = {f.name: f for f in uploaded_files}
+
+                # 构建或刷新缓存数据
                 if st.session_state.batch_hirf_cache is None or len(st.session_state.batch_hirf_cache) != len(
                         uploaded_files):
                     data_list = []
@@ -651,10 +657,12 @@ def main():
                         row = {
                             "文件名": f.name,
                             "飞机型号": smart["aircraft_model"],
-                            probe_label: smart["position"],
+                            probe_label: smart["position"],  # 探针/天线位置
                             "实验天线位置": smart["antenna_pos"],
+                            "天线类型": "一般天线",  # <--- 新增字段
                             "极化方式": smart["polarization"],
-                            "频率单位": "MHz" if not is_field_db else "MHz",
+                            "天线入射角": smart["angle"],  # <--- 新增字段 (默认取解析值或0)
+                            "频率单位": "MHz" if not is_field_db else "MHz",  # 默认MHz
                             "备注": "批量导入"
                         }
                         if is_field_db:
@@ -663,62 +671,92 @@ def main():
                     st.session_state.batch_hirf_cache = pd.DataFrame(data_list)
 
                 df_batch = st.session_state.batch_hirf_cache
+
+                # 配置表格列的显示和交互
                 col_config = {
                     "文件名": st.column_config.TextColumn("文件名", disabled=True),
-                    "飞机型号": st.column_config.TextColumn(required=True),
-                    probe_label: st.column_config.TextColumn(required=True),
-                    "极化方式": st.column_config.SelectboxColumn(options=["垂直极化", "水平极化"], required=True),
-                    "频率单位": st.column_config.SelectboxColumn(options=["Hz", "KHz", "MHz", "GHz"], required=True)
+                    "飞机型号": st.column_config.TextColumn("飞机型号", required=True),
+                    probe_label: st.column_config.TextColumn(probe_label, required=True),
+                    "实验天线位置": st.column_config.TextColumn("实验天线位置", required=True),
+                    "天线类型": st.column_config.TextColumn("天线类型", required=True),  # <--- 配置新增列
+                    "天线入射角": st.column_config.TextColumn("天线入射角", required=True),  # <--- 配置新增列
+                    "极化方式": st.column_config.SelectboxColumn("极化方式", options=["垂直极化", "水平极化"], required=True),
+                    "频率单位": st.column_config.SelectboxColumn("频率单位", options=["Hz", "KHz", "MHz", "GHz"],
+                                                             required=True),
+                    "备注": st.column_config.TextColumn("备注")
                 }
-                if is_field_db:
-                    col_config["数据类型"] = st.column_config.SelectboxColumn(options=["MAX", "MIN", "AV"], required=True)
 
-                st.markdown("⬇️ **请在下方表格确认并修正信息:**")
-                edited_df = st.data_editor(df_batch, column_config=col_config, use_container_width=True,
-                                           hide_index=True, num_rows="fixed")
+                if is_field_db:
+                    col_config["数据类型"] = st.column_config.SelectboxColumn("数据类型", options=["MAX", "MIN", "AV"],
+                                                                          required=True)
+
+                st.markdown("⬇️ **请在下方表格确认并修正信息 (支持像Excel一样编辑):**")
+
+                # 显示可编辑表格
+                edited_df = st.data_editor(
+                    df_batch,
+                    column_config=col_config,
+                    use_container_width=True,
+                    hide_index=True,
+                    num_rows="fixed"
+                )
 
                 if st.button(f"确认导入 {len(uploaded_files)} 个文件", type="primary"):
                     success_count = 0
                     fail_count = 0
                     progress_bar = st.progress(0)
+
                     for idx, row in edited_df.iterrows():
                         fname = row["文件名"]
                         f_obj = file_map.get(fname)
+
+                        # 基础校验
                         if not row["飞机型号"] or not row[probe_label]:
                             fail_count += 1
                             continue
+
                         f_obj.seek(0)
                         content = parse_data_file(f_obj)
+
+                        # 频率校验
                         valid, msg = validate_frequency_range(content, row["频率单位"], table_name)
                         if not valid:
                             st.error(f"{fname}: {msg}")
                             fail_count += 1
                             continue
+
+                        # 构建数据库记录 (不再使用硬编码，而是读取表格数据)
                         db_record = {
                             "aircraft_model": row["飞机型号"],
                             "antenna_position": row["实验天线位置"],
-                            "antenna_type": "一般天线",
+                            "antenna_type": row["天线类型"],  # <--- 读取表格值
                             "antenna_polarization": row["极化方式"],
-                            "antenna_incident_angle": "0",
+                            "antenna_incident_angle": row["天线入射角"],  # <--- 读取表格值
                             "data_content": content,
                             "frequency_unit": row["频率单位"],
                             "notes": row["备注"]
                         }
+
+                        # 处理不同表的特有字段
                         if is_field_db:
                             db_record["receiving_antenna_position"] = row[probe_label]
                             db_record["data_stat_type"] = row["数据类型"]
                         else:
                             db_record["current_probe_position"] = row[probe_label]
+
                         if add_record_db(conn, table_name, db_record):
                             success_count += 1
                         else:
                             fail_count += 1
+
                         progress_bar.progress((idx + 1) / len(edited_df))
 
                     st.toast(f"导入完成! 成功: {success_count}, 失败: {fail_count}")
                     if success_count > 0:
                         st.success(f"成功导入 {success_count} 条数据")
                         st.session_state.batch_hirf_cache = None
+                        time.sleep(1.5)
+                        st.rerun()  # 成功后刷新
 
     # ================= 3. 修改数据 =================
         # ================= 3. 修改数据 (已优化：字段全覆盖) =================
