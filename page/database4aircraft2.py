@@ -82,6 +82,18 @@ def init_db():
     )
     ''')
 
+    # 4. 创建雷电间击环境excel表
+    cursor.execute('''
+CREATE TABLE IF NOT EXISTS aircraft_excel_tables (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aircraft_model TEXT NOT NULL,
+    filename TEXT,
+    excel_data BLOB, -- 存储整个文件
+    description TEXT,
+    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
     # --- 数据库结构迁移：检查并添加新字段 ---
     # 尝试添加 data_domain (数据域) 字段
     try:
@@ -551,418 +563,157 @@ def delete_lightning_zone():
 # ==========================================
 # ========== 雷电间击环境数据库功能 ==========
 # ==========================================
-def excel_filter_import():
+def excel_bulk_file_management():
     """
-    Excel/CSV 表格筛选导入功能 (完整修复版)
-    包含：智能表头识别、手动列映射、类型兼容修复、交互式筛选、批量入库
+    型号 Excel 统计表管理功能
+    支持：整表二进制存储、多 Sheet 预览、自动类型修复、删除与导出
     """
-    st.markdown("### 📊 Excel/CSV 表格筛选导入")
-    st.info("提示：系统会自动识别常见的表头名称（如：机型、飞机型号、Model等）。如果识别失败，您可以在下方手动指定。")
+    st.markdown("### 📁 型号 Excel 统计台账管理")
+    st.info("说明：此功能将整个 Excel 文件（含所有 Sheet）存入数据库，适用于不规则的统计台账。")
 
-    # 1. 文件上传
-    uploaded_file = st.file_uploader("上传 Excel (.xlsx) 或 CSV (.csv) 表格", type=["xlsx", "xls", "csv"])
+    # 确保数据库表已存在
+    conn = create_connection()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS aircraft_excel_tables (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            aircraft_model TEXT NOT NULL,
+            filename TEXT,
+            excel_data BLOB,
+            description TEXT,
+            upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.close()
 
-    if uploaded_file:
-        try:
-            # 2. 读取数据
-            if uploaded_file.name.endswith('.csv'):
-                try:
-                    df = pd.read_csv(uploaded_file, encoding='utf-8')
-                except UnicodeDecodeError:
-                    uploaded_file.seek(0)
-                    df = pd.read_csv(uploaded_file, encoding='gbk')
-            else:
-                df = pd.read_excel(uploaded_file)
+    sub_op = st.tabs(["📊 查看与操作", "📤 上传新表格"])
 
-            # ========================================================
-            # 🌟 阶段一：表头智能识别与映射
-            # ========================================================
+    # --- Tab 1: 查看与操作 ---
+    with sub_op[0]:
+        conn = create_connection()
+        # 获取索引列表
+        df_list = pd.read_sql_query(
+            "SELECT id, aircraft_model, filename, description, upload_date FROM aircraft_excel_tables ORDER BY upload_date DESC",
+            conn
+        )
+        conn.close()
 
-            # A. 表头预处理（去除空格、括号、转小写）
-            clean_headers = {}
-            for col in df.columns:
-                clean_col = str(col).strip()
-                clean_col = re.sub(r'\s+', '', clean_col)  # 去空格
-                clean_col = re.sub(r'[\(（].*?[\)）]', '', clean_col)  # 去括号及内容
-                clean_headers[col] = clean_col
+        if df_list.empty:
+            st.warning("数据库中暂无存档的 Excel 表格。")
+        else:
+            st.markdown("#### 已存档列表")
+            st.dataframe(df_list, use_container_width=True, hide_index=True)
 
-            df = df.rename(columns=clean_headers)
+            st.markdown("---")
+            col_sel, col_del = st.columns([3, 1])
 
-            # B. 映射字典
-            column_mapping = {
-                # --- 飞机型号 ---
-                "飞机型号": "aircraft_model", "机型": "aircraft_model",
-                "model": "aircraft_model", "aircraft": "aircraft_model",
-                # --- 测试点 ---
-                "测试点": "test_point", "测试点编号": "test_point", "tp": "test_point",
-                "testpoint": "test_point", "测点": "test_point",
-                # --- 电流注入点 ---
-                "电流入/出点": "current_in_out", "注入点": "current_in_out", "入出点": "current_in_out",
-                # --- 远端 ---
-                "远端连接器": "voltage_probe_point", "远端": "voltage_probe_point",
-                # --- 波形 ---
-                "激励波形": "waveform_type", "激励": "waveform_type",
-                "感应波形": "induced_waveform", "感应": "induced_waveform",
-                # --- 其他 ---
-                "被测对象": "test_object_type", "对象类型": "test_object_type",
-                "数据域": "data_domain", "domain": "data_domain",
-                "数据类型": "data_type", "type": "data_type",
-                "单位": "data_unit", "数据单位": "data_unit", "unit": "data_unit",
-                "描述": "description", "备注": "description", "desc": "description"
-            }
+            with col_sel:
+                selected_id = st.selectbox(
+                    "选择要操作的记录",
+                    df_list['id'],
+                    format_func=lambda
+                        x: f"ID: {x} | {df_list[df_list['id'] == x]['aircraft_model'].iloc[0]} - {df_list[df_list['id'] == x]['filename'].iloc[0]}"
+                )
 
-            # 执行自动映射
-            final_rename_map = {}
-            for col in df.columns:
-                col_lower = col.lower()
-                if col in column_mapping:
-                    final_rename_map[col] = column_mapping[col]
-                elif col_lower in column_mapping:
-                    final_rename_map[col] = column_mapping[col_lower]
+            # 获取选中文件的详细数据
+            conn = create_connection()
+            res = conn.execute("SELECT excel_data, filename, aircraft_model FROM aircraft_excel_tables WHERE id=?",
+                               (selected_id,)).fetchone()
+            conn.close()
 
-            df = df.rename(columns=final_rename_map)
+            if res:
+                excel_bytes, fname, amodel = res
 
-            # ========================================================
-            # 🌟 阶段二：必填列检查与手动修补
-            # ========================================================
-
-            required_cols_map = {"aircraft_model": "飞机型号", "test_point": "测试点"}
-            missing_cols = [k for k in required_cols_map.keys() if k not in df.columns]
-
-            if missing_cols:
-                st.warning(f"⚠️ 自动识别失败，无法找到必填列：{[required_cols_map[m] for m in missing_cols]}。")
-                st.markdown("**请手动指定对应关系：**")
-
-                cols_selection = st.columns(len(missing_cols))
-                manual_mapping = {}
-                available_columns = list(df.columns)
-
-                all_mapped = True
-                for i, missing_key in enumerate(missing_cols):
-                    with cols_selection[i]:
-                        selected_col = st.selectbox(
-                            f"请选择代表 '{required_cols_map[missing_key]}' 的列",
-                            options=["请选择..."] + available_columns,
-                            key=f"manual_map_{missing_key}"
-                        )
-                        if selected_col == "请选择...":
-                            all_mapped = False
-                        else:
-                            manual_mapping[selected_col] = missing_key
-
-                if not all_mapped:
-                    st.info("请在上方下拉框中完成列名映射后继续...")
-                    st.stop()
-                else:
-                    df = df.rename(columns=manual_mapping)
-                    st.success("✅ 映射成功！请继续下方操作。")
-
-            # ========================================================
-            # 🌟 阶段三：数据清洗与类型修复 (🔧 关键修复点)
-            # ========================================================
-
-            # 1. 补全缺失列
-            all_db_cols = ["current_in_out", "voltage_probe_point", "waveform_type",
-                           "induced_waveform", "test_object_type", "data_domain",
-                           "data_type", "data_unit", "description"]
-
-            for col in all_db_cols:
-                if col not in df.columns:
-                    df[col] = None
-
-                    # 2. 🔧 强制将所有文本类型的列转换为 String
-            # 解决 "compatible for editing the underlying data type float" 错误
-            text_columns = ['aircraft_model', 'test_point', 'current_in_out',
-                            'voltage_probe_point', 'description']
-
-            for col in text_columns:
-                if col in df.columns:
-                    # fillna("") 将空值(NaN/Float) 变为空字符串
-                    # astype(str) 确保即使是纯数字的描述也被视为字符串
-                    df[col] = df[col].fillna("").astype(str)
-
-            # 3. 清洗数据类型 (voltage/current)
-            def clean_data_type(val):
-                if pd.isna(val): return "voltage"
-                s = str(val).strip()
-                if "电" in s and "流" in s: return "current"
-                if "Current" in s: return "current"
-                if "Amp" in s: return "current"
-                return "voltage"
-
-            if 'data_type' in df.columns:
-                df['data_type'] = df['data_type'].apply(clean_data_type)
-            else:
-                df['data_type'] = "voltage"
-
-            # ========================================================
-            # 🌟 阶段四：交互式筛选
-            # ========================================================
-
-            st.markdown("#### 🛠️ 筛选与确认数据")
-            st.caption("请在下方表格中勾选需要导入的行。")
-
-            if "导入?" not in df.columns:
-                df.insert(0, "导入?", True)
-
-            edited_df = st.data_editor(
-                df,
-                column_config={
-                    "导入?": st.column_config.CheckboxColumn("导入?", help="取消勾选以跳过此行", width="small"),
-                    "aircraft_model": st.column_config.TextColumn("飞机型号", disabled=True),
-                    "test_point": st.column_config.TextColumn("测试点", disabled=True),
-                    "waveform_type": st.column_config.SelectboxColumn("激励波形", options=["A波", "H波"]),
-                    "induced_waveform": st.column_config.SelectboxColumn("感应波形", options=["A波", "H波"]),
-                    "test_object_type": st.column_config.SelectboxColumn("被测对象", options=["线束", "针脚"]),
-                    "data_domain": st.column_config.SelectboxColumn("数据域", options=["时域数据", "频域数据"]),
-                    "data_type": st.column_config.SelectboxColumn("类型", options=["voltage", "current"]),
-                    "data_unit": st.column_config.SelectboxColumn("单位", options=["V", "mV", "kV", "A", "mA", "kA"]),
-                    # 这里之前报错，现在因为上面做了 astype(str)，所以安全了
-                    "description": st.column_config.TextColumn("描述"),
-                },
-                hide_index=True,
-                use_container_width=True
-            )
-
-            # ========================================================
-            # 🌟 阶段五：写入数据库
-            # ========================================================
-
-            rows_to_import = edited_df[edited_df["导入?"] == True]
-            count = len(rows_to_import)
-
-            col_info, col_btn = st.columns([3, 1])
-            with col_info:
-                st.write(f"当前共 {len(df)} 条数据，已选择导入 **{count}** 条。")
-
-            with col_btn:
-                submit_btn = st.button(f"🚀 确认导入", type="primary", disabled=(count == 0))
-
-            if submit_btn:
-                success_count = 0
-                fail_count = 0
-                conn = create_connection()
-                cursor = conn.cursor()
-
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-
-                try:
-                    total_rows = len(rows_to_import)
-                    for i, (idx, row) in enumerate(rows_to_import.iterrows()):
-                        progress = (i + 1) / total_rows
-                        progress_bar.progress(progress)
-                        status_text.text(f"正在写入: {row['aircraft_model']} - {row['test_point']} ({i + 1}/{total_rows})")
-
-                        try:
-                            cursor.execute(
-                                '''INSERT INTO indirect_effects (
-                                    aircraft_model, test_point, current_in_out, voltage_probe_point, 
-                                    waveform_type, induced_waveform, test_object_type, data_file, 
-                                    data_type, data_unit, description, data_domain
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                                (
-                                    str(row["aircraft_model"]),
-                                    str(row["test_point"]),
-                                    row["current_in_out"],
-                                    row["voltage_probe_point"],
-                                    row["waveform_type"],
-                                    row["induced_waveform"],
-                                    row["test_object_type"],
-                                    None,
-                                    row["data_type"],
-                                    row["data_unit"],
-                                    row["description"],
-                                    row["data_domain"]
-                                )
-                            )
-                            success_count += 1
-                        except Exception as row_err:
-                            print(f"Row {idx} error: {row_err}")
-                            fail_count += 1
-
-                    conn.commit()
-                    status_text.empty()
-                    progress_bar.empty()
-                    st.balloons()
-
-                    if fail_count > 0:
-                        st.warning(f"导入完成：成功 {success_count} 条，失败 {fail_count} 条。")
-                    else:
-                        st.success(f"🎉 全部 {success_count} 条数据已成功添加至数据库！")
-
-                except Exception as e:
-                    st.error(f"数据库写入严重错误: {e}")
-                finally:
-                    conn.close()
-
-        except Exception as e:
-            st.error(f"读取表格文件时出错: {e}")
-def excel_filter_import00():
-    st.markdown("### 📊 Excel/CSV 表格筛选导入")
-    st.info("此功能用于导入汇总后的**元数据表格**（不包含波形文件）。请确保上传的表格包含以下列（顺序不限）：\n"
-            "飞机型号, 测试点, 电流入/出点, 远端连接器, 激励波形, 感应波形, 被测对象, 数据域, 数据类型, 单位, 描述")
-
-    # 1. 文件上传
-    uploaded_file = st.file_uploader("上传 Excel (.xlsx) 或 CSV (.csv) 表格", type=["xlsx", "xls", "csv"])
-
-    if uploaded_file:
-        try:
-            # 读取数据
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-
-            # 2. 字段映射 (处理固定格式)
-            # 定义 Excel 表头 -> 数据库字段的映射关系
-            # 允许用户表格的列名稍微灵活一点
-            column_mapping = {
-                "飞机型号": "aircraft_model",
-                "机型": "aircraft_model",
-                "测试点": "test_point",
-                "测试点编号": "test_point",
-                "电流入/出点": "current_in_out",
-                "注入点": "current_in_out",
-                "远端连接器": "voltage_probe_point",
-                "远端连接器编号": "voltage_probe_point",
-                "激励波形": "waveform_type",
-                "感应波形": "induced_waveform",
-                "被测对象": "test_object_type",
-                "对象类型": "test_object_type",
-                "数据域": "data_domain",
-                "数据类型": "data_type",
-                "单位": "data_unit",
-                "数据单位": "data_unit",
-                "描述": "description",
-                "备注": "description"
-            }
-
-            # 重命名列
-            df = df.rename(columns=column_mapping)
-
-            # 3. 必填字段检查
-            required_cols = ["aircraft_model", "test_point"]
-            missing_cols = [col for col in required_cols if col not in df.columns]
-
-            if missing_cols:
-                st.error(f"表格缺少必填列: {', '.join(missing_cols)}。请检查表头名称。")
-                return
-
-            # 4. 数据预处理/清洗
-            # 自动添加缺失的非必填列，避免报错
-            all_db_cols = ["current_in_out", "voltage_probe_point", "waveform_type",
-                           "induced_waveform", "test_object_type", "data_domain",
-                           "data_type", "data_unit", "description"]
-
-            for col in all_db_cols:
-                if col not in df.columns:
-                    df[col] = None  # 或者 ""
-
-            # 数据类型清洗: 将中文转为数据库存的英文代码
-            # 防止用户表格里写的是 "电压" 而不是 "voltage"
-            def clean_data_type(val):
-                if pd.isna(val): return "voltage"  # 默认
-                s = str(val).strip()
-                if "电" in s and "流" in s: return "current"
-                if "Current" in s: return "current"
-                return "voltage"
-
-            df['data_type'] = df['data_type'].apply(clean_data_type)
-
-            # 5. 交互式筛选 (核心功能)
-            st.markdown("#### 🛠️ 筛选与确认数据")
-            st.write("请在下方表格中勾选需要导入的行（支持排序和列宽调整）：")
-
-            # 添加一个 "导入?" 列，默认全选
-            df.insert(0, "导入?", True)
-
-            # 使用 data_editor 让用户操作
-            edited_df = st.data_editor(
-                df,
-                column_config={
-                    "导入?": st.column_config.CheckboxColumn("导入?", help="取消勾选以跳过此行"),
-                    "aircraft_model": "飞机型号",
-                    "test_point": "测试点",
-                    "waveform_type": st.column_config.SelectboxColumn("激励波形", options=["A波", "H波"]),
-                    "data_type": st.column_config.SelectboxColumn("类型", options=["voltage", "current"]),
-                    "data_unit": st.column_config.SelectboxColumn("单位", options=["V", "mV", "kV", "A", "mA", "kA"]),
-                },
-                hide_index=True,
-                use_container_width=True
-            )
-
-            # 6. 提交入库
-            # 筛选出用户勾选的行
-            rows_to_import = edited_df[edited_df["导入?"] == True]
-
-            count = len(rows_to_import)
-            st.caption(f"当前共 {len(df)} 条数据，已选择导入 {count} 条。")
-
-            if st.button(f"🚀 确认导入 {count} 条数据到数据库", type="primary"):
-                if count == 0:
-                    st.warning("请至少选择一条数据。")
-                else:
-                    success_count = 0
-                    fail_count = 0
-                    conn = create_connection()
-                    cursor = conn.cursor()
-
-                    progress_bar = st.progress(0)
-
-                    try:
-                        # 遍历 DataFrame 插入数据
-                        for idx, row in rows_to_import.iterrows():
-                            progress_bar.progress((idx + 1) / len(edited_df))  # 简单进度条
-
-                            try:
-                                cursor.execute(
-                                    '''INSERT INTO indirect_effects (
-                                        aircraft_model, test_point, current_in_out, voltage_probe_point, 
-                                        waveform_type, induced_waveform, test_object_type, data_file, 
-                                        data_type, data_unit, description, data_domain
-                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                                    (
-                                        str(row["aircraft_model"]),
-                                        str(row["test_point"]),
-                                        row["current_in_out"],
-                                        row["voltage_probe_point"],
-                                        row["waveform_type"],
-                                        row["induced_waveform"],
-                                        row["test_object_type"],
-                                        None,  # 表格导入通常没有二进制波形文件，置为 None
-                                        row["data_type"],
-                                        row["data_unit"],
-                                        row["description"],
-                                        row["data_domain"]
-                                    )
-                                )
-                                success_count += 1
-                            except Exception as row_err:
-                                print(f"Row {idx} error: {row_err}")
-                                fail_count += 1
-
+                # 删除功能
+                with col_del:
+                    st.write("")  # 间距
+                    if st.button("🗑️ 删除该记录", type="secondary", use_container_width=True):
+                        conn = create_connection()
+                        conn.execute("DELETE FROM aircraft_excel_tables WHERE id=?", (selected_id,))
                         conn.commit()
-                        st.balloons()
-                        if fail_count > 0:
-                            st.warning(f"导入完成：成功 {success_count} 条，失败 {fail_count} 条。")
-                        else:
-                            st.success(f"🎉 全部 {success_count} 条数据已成功添加至数据库！")
+                        conn.close()
+                        st.toast(f"已删除记录 ID: {selected_id}", icon="✅")
+                        st.rerun()
+
+                # 预览与导出区域
+                expander = st.expander(f"查看详情: {fname}", expanded=True)
+                with expander:
+                    try:
+                        xl = pd.ExcelFile(io.BytesIO(excel_bytes))
+                        sheet_names = xl.sheet_names
+
+                        c1, c2 = st.columns([2, 1])
+                        with c1:
+                            sel_sheet = st.selectbox("选择要预览的分表 (Sheet)", sheet_names)
+                        with c2:
+                            st.write("")  # 间距
+                            st.download_button(
+                                label="📥 导出原始 Excel",
+                                data=excel_bytes,
+                                file_name=fname,
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True
+                            )
+
+                        # 读取并修复类型冲突
+                        raw_df = pd.read_excel(io.BytesIO(excel_bytes), sheet_name=sel_sheet)
+
+                        # --- 核心修复：解决 ArrowTypeError ---
+                        display_df = raw_df.copy()
+                        for col in display_df.columns:
+                            # 如果是 object 类型（通常是混合类型或含有特殊格式）
+                            if display_df[col].dtype == 'object':
+                                # 强制转为字符串，并将 'nan' 替换为空值
+                                display_df[col] = display_df[col].astype(str).replace(['nan', 'None', 'NaN'], '')
+                        # ------------------------------------
+
+                        st.dataframe(display_df, use_container_width=True)
 
                     except Exception as e:
-                        st.error(f"数据库写入严重错误: {e}")
+                        st.error(f"解析 Excel 失败: {e}")
+
+    # --- Tab 2: 上传新表格 ---
+    with sub_op[1]:
+        with st.form("upload_excel_form", clear_on_submit=True):
+            st.markdown("#### 填写存档信息")
+            u_model = st.text_input("飞机型号*", placeholder="例如: AG600")
+            u_file = st.file_uploader("选择 Excel 文件", type=["xlsx", "xls"])
+            u_desc = st.text_area("内容描述/备注", placeholder="说明该表格的主要内容，如：某次试验的原始记录汇总")
+
+            submit = st.form_submit_button("🚀 提交存档", use_container_width=True)
+
+            if submit:
+                if not u_model or not u_file:
+                    st.error("请填写必填项（型号和文件）")
+                else:
+                    conn = create_connection()
+                    try:
+                        binary_data = u_file.getvalue()
+                        conn.execute('''
+                            INSERT INTO aircraft_excel_tables (aircraft_model, filename, excel_data, description)
+                            VALUES (?, ?, ?, ?)
+                        ''', (u_model, u_file.name, binary_data, u_desc))
+                        conn.commit()
+                        st.success(f"机型 {u_model} 的表格 '{u_file.name}' 已成功存入数据库！")
+                    except Exception as e:
+                        st.error(f"存储失败: {e}")
                     finally:
                         conn.close()
-                        progress_bar.empty()
+                    st.success("存入成功！")
+                    # 强制 Streamlit 重新运行，这样切换到“查看” Tab 时数据就是最新的
+                    st.rerun()
 
-        except Exception as e:
-            st.error(f"读取或解析表格文件时出错: {e}")
-            st.write("请检查 Excel 格式是否正确，或是否包含特殊字符。")
+
 def indirect_effects_page(operation):
     st.header("雷电间击环境数据库")
 
+    #if operation == "查看数据":
+    #    view_indirect_effects()
     if operation == "查看数据":
-        view_indirect_effects()
+        tab_v1, tab_v2 = st.tabs(["波形数据检索", "Excel台账查看"])
+        with tab_v1:
+            view_indirect_effects()  # 原有的波形查看
+        with tab_v2:
+            excel_bulk_file_management()  # 新增的表格管理（查看部分）
     elif operation == "添加数据":
         # === 修改点：增加第三个 Tab "Excel表格筛选导入" ===
         tab1, tab2, tab3 = st.tabs(["单条添加", "批量数据文件导入(.dat)", "Excel表格筛选导入"])
@@ -972,7 +723,8 @@ def indirect_effects_page(operation):
         with tab2:
             batch_add_indirect_effects()  # 原有的处理 .dat 文件的函数
         with tab3:
-            excel_filter_import()  # <--- 新增的函数
+            excel_bulk_file_management()  # 新增的表格管理（上传部分）
+            ##excel_filter_import()  # <--- 新增的函数
 
     elif operation == "修改数据":
         update_indirect_effect()
@@ -1248,182 +1000,124 @@ def view_indirect_effects():
     else:
         st.info("请输入搜索条件并点击查询按钮")
 
-def view_indirect_effects00():
-    st.subheader("查看雷电间击环境数据")
-
-    # 1. 搜索区域
-    col1, col2 = st.columns(2)
-    with col1:
-        aircraft_model = st.text_input("飞机型号", "")
-    with col2:
-        test_point = st.text_input("电流探针测试点", "")
-
-    # 初始化 session state
-    if 'ie_search_result' not in st.session_state:
-        st.session_state['ie_search_result'] = None
-
-    # 2. 查询逻辑
-    if st.button("查询"):
-        conn = create_connection()
-        # 动态构建 SQL 语句
-        query = "SELECT * FROM indirect_effects WHERE 1=1"
-        params = []
-        if aircraft_model:
-            query += " AND aircraft_model LIKE ?"
-            params.append(f"%{aircraft_model}%")
-        if test_point:
-            query += " AND test_point LIKE ?"
-            params.append(f"%{test_point}%")
-
-        df = pd.read_sql_query(query, conn, params=params if params else None)
-        conn.close()
-        st.session_state['ie_search_result'] = df
-
-    # 3. 结果显示区域
-    if st.session_state['ie_search_result'] is not None:
-        df = st.session_state['ie_search_result']
-        if df.empty:
-            st.warning("没有找到匹配的记录")
-        else:
-            # 显示概览表格 (隐藏二进制文件列)
-            st.dataframe(df.drop(columns=['data_file']), use_container_width=True)
-
-            st.markdown("---")
-            st.subheader("详细数据视图")
-
-            # 选择具体的记录查看
-            # 使用 format_func 让下拉框显示更友好的信息
-            selected_id = st.selectbox(
-                "选择记录查看详细波形和下载",
-                df['id'],
-                format_func=lambda
-                    x: f"ID:{x} - {df[df['id'] == x]['aircraft_model'].iloc[0]} ({df[df['id'] == x]['test_point'].iloc[0]})"
-            )
-
-            # 获取选中记录的完整数据
-            selected_record = df[df['id'] == selected_id].iloc[0]
-
-            # 解析字段 (兼容旧数据可能缺失的情况)
-            data_domain = selected_record.get('data_domain')
-            induced_waveform = selected_record.get('induced_waveform')
-            excitation_waveform = selected_record['waveform_type']
-
-            # 显示元数据
-            col_info1, col_info2, col_info3 = st.columns(3)
-            with col_info1:
-                st.write(f"**激励波形**: {excitation_waveform or '未填写'}")
-                st.write(f"**感应波形**: {induced_waveform or '未填写'}")
-            with col_info2:
-                st.write(f"**数据域**: {data_domain or '未填写'}")
-                st.write(f"**对象类型**: {selected_record['test_object_type'] or '未填写'}")
-            with col_info3:
-                st.write(f"**电流入/出点**: {selected_record['current_in_out'] or '未填写'}")
-                st.write(f"**电压探针**: {selected_record['voltage_probe_point'] or '未填写'}")
-
-            # 4. 数据文件处理 (绘图 & 下载)
-            if selected_record['data_file'] is not None:
-                try:
-                    # --- A. 尝试解析并绘图 ---
-                    data_text = selected_record['data_file'].decode('utf-8', errors='ignore')
-                    data_lines = data_text.split('\n')
-
-                    x_values = []
-                    y_values = []
-
-                    for line in data_lines:
-                        line = line.replace(',', ' ').strip()
-                        # 跳过注释行和空行
-                        if line and not line.startswith(('#', '//', '%', 'Time', 'Freq')):
-                            parts = line.split()
-                            if len(parts) >= 2:
-                                try:
-                                    val_x = float(parts[0])
-                                    val_y = float(parts[1])
-                                    x_values.append(val_x)
-                                    y_values.append(val_y)
-                                except ValueError:
-                                    continue
-
-                    if x_values and y_values:
-                        fig, ax = plt.subplots(figsize=(10, 4))
-                        ax.plot(x_values, y_values)
-
-                        # 设置坐标轴标签
-                        if data_domain == '频域数据':
-                            ax.set_xlabel('频率 (MHz)')
-                        else:
-                            ax.set_xlabel('时间 (s)')
-
-                        unit = selected_record['data_unit'] or ''
-                        d_type = selected_record['data_type']
-                        # 简单的翻译映射
-                        y_label_text = "电压" if d_type == 'voltage' else "电流"
-                        ax.set_ylabel(f'{y_label_text} ({unit})')
-
-                        ax.set_title(f"{selected_record['aircraft_model']} - {selected_record['test_point']}")
-                        ax.grid(True, linestyle='--', alpha=0.6)
-                        st.pyplot(fig)
-                    else:
-                        st.warning("无法从文件中解析出有效的 X-Y 数据对，无法绘图。")
-
-                    # --- B. 智能生成文件名并下载 ---
-
-                    # 定义文件名字段顺序 (严格按照你的格式要求)
-                    filename_fields = [
-                        selected_record['aircraft_model'],  # 1. 飞机型号
-                        selected_record['test_point'],  # 2. 测试点/连接器编号
-                        selected_record['current_in_out'],  # 3. 实验电流入点/出点
-                        selected_record['voltage_probe_point'],  # 4. 远端连接器编号
-                        selected_record['waveform_type'],  # 5. 激励波形
-                        selected_record['test_object_type'],  # 6. 被测对象类型
-                        selected_record.get('induced_waveform'),  # 7. 感应波形
-                        selected_record.get('data_domain'),  # 8. 数据域类型
-                        selected_record['data_type'],  # 9. 数据类型
-                        selected_record['data_unit']  # 10. 数据单位
-                    ]
-
-                    valid_parts = []
-                    for field in filename_fields:
-                        if field:  # 只有字段不为空(None或"")时才添加
-                            s_val = str(field).strip()
-                            # 处理非法字符 (文件名不能包含 / 或 \)
-                            s_val = s_val.replace('/', '-').replace('\\', '-')
-
-                            # (可选) 将 voltage/current 翻译为中文，保持与输入文件名风格一致
-                            if s_val == 'voltage': s_val = '电压'
-                            if s_val == 'current': s_val = '电流'
-
-                            valid_parts.append(s_val)
-
-                    # 拼接文件名
-                    if valid_parts:
-                        # 检测原文件是 .txt 还是 .dat (通过前面解析时的逻辑，或者默认 .dat)
-                        # 这里统一保存为 .dat，或者根据内容判断
-                        final_filename = "_".join(valid_parts) + ".dat"
-                    else:
-                        final_filename = "unknown_data.dat"
-
-                    st.download_button(
-                        label=f"📥 下载数据文件 ({final_filename})",
-                        data=selected_record['data_file'],
-                        file_name=final_filename,
-                        mime="application/octet-stream",
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-                    st.error(f"处理数据文件时出错: {e}")
-            else:
-                st.info("该记录没有上传数据文件")
-
-            # 显示描述
-            if selected_record['description']:
-                st.markdown(f"**描述信息:**\n> {selected_record['description']}")
-    else:
-        st.info("请输入搜索条件并点击查询按钮")
-
 
 def add_indirect_effect():
+    st.subheader("添加雷电间击环境数据 (支持文件名自动识别)")
+
+    # 1. 预先声明需要自动填充的变量默认值
+    parsed_info = {
+        "aircraft_model": "",
+        "test_point": "",
+        "current_in_out": "",
+        "voltage_probe_point": "",
+        "waveform_type": "A波",
+        "induced_waveform": "A波",
+        "test_object_type": "线束",
+        "data_domain": "时域数据",
+        "data_type": "voltage",
+        "data_unit": "V"
+    }
+
+    # 2. 放在最前面的文件上传器，用于触发识别
+    uploaded_file = st.file_uploader("📂 首先上传数据文件以自动识别字段 (.txt/.dat)", type=["txt", "dat"])
+
+    if uploaded_file:
+        # 调用您已有的智能解析函数
+        parsed_info = smart_parse_filename(uploaded_file.name)
+        st.success(f"已识别文件名：{uploaded_file.name}，已为您自动填充下方表单。")
+
+    # 3. 使用容器展示表单，允许用户手动修改识别结果
+    with st.container(border=True):
+        st.markdown("### 确认并完善记录详情")
+
+        aircraft_model = st.text_input("飞机型号*", value=parsed_info.get("aircraft_model", ""))
+        test_point = st.text_input("测试点/连接器编号*", value=parsed_info.get("test_point", ""))
+
+        col1, col2 = st.columns(2)
+        with col1:
+            current_in_out = st.text_input("实验电流入点/出点", value=parsed_info.get("current_in_out", ""))
+
+            # 计算下拉框的默认索引
+            exc_idx = 1 if parsed_info.get("waveform_type") == "H波" else 0
+            excitation_waveform = st.selectbox("激励波形", ["A波", "H波"], index=exc_idx)
+
+            ind_idx = 1 if parsed_info.get("induced_waveform") == "H波" else 0
+            induced_waveform = st.selectbox("感应波形", ["A波", "H波"], index=ind_idx)
+
+        with col2:
+            voltage_probe_point = st.text_input("远端连接器编号", value=parsed_info.get("voltage_probe_point", ""))
+
+            obj_idx = 1 if parsed_info.get("test_object_type") == "针脚" else 0
+            test_object_type = st.selectbox("被测对象类型", ["线束", "针脚"], index=obj_idx)
+
+            dom_idx = 1 if parsed_info.get("data_domain") == "频域数据" else 0
+            data_domain = st.selectbox("数据域类型", ["时域数据", "频域数据"], index=dom_idx)
+
+        st.markdown("---")
+
+        # 数据类型与单位的动态联动
+        col_type, col_unit = st.columns(2)
+        with col_type:
+            # 确定 Radio 的默认值
+            type_idx = 1 if parsed_info.get("data_type") == "current" else 0
+            data_type_label = st.radio(
+                "数据类型*",
+                ["电压数据 (Voltage)", "电流数据 (Current)"],
+                index=type_idx,
+                horizontal=True,
+                key="single_add_type"
+            )
+            data_type = "voltage" if "Voltage" in data_type_label else "current"
+
+        with col_unit:
+            if data_type == "voltage":
+                unit_opts = ["kV", "V", "mV"]
+            else:
+                unit_opts = ["kA", "A", "mA"]
+
+            # 匹配解析出的单位索引
+            try:
+                u_idx = unit_opts.index(parsed_info.get("data_unit"))
+            except:
+                u_idx = 1  # 默认 V 或 A
+
+            data_unit = st.selectbox("数据单位*", unit_opts, index=u_idx)
+
+        description = st.text_area("描述", value=parsed_info.get("description", ""))
+
+        submitted = st.button("🚀 提交数据并入库", type="primary", use_container_width=True)
+
+    # 4. 提交逻辑
+    if submitted:
+        if not aircraft_model or not test_point:
+            st.error("飞机型号和测试点是必填项")
+            return
+
+        conn = create_connection()
+        cursor = conn.cursor()
+        try:
+            data_bytes = uploaded_file.getvalue() if uploaded_file else None
+
+            cursor.execute(
+                '''INSERT INTO indirect_effects (
+                    aircraft_model, test_point, current_in_out, voltage_probe_point, 
+                    waveform_type, induced_waveform, test_object_type, data_file, 
+                    data_type, data_unit, description, data_domain
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                (aircraft_model, test_point, current_in_out, voltage_probe_point,
+                 excitation_waveform, induced_waveform, test_object_type, data_bytes,
+                 data_type, data_unit, description, data_domain)
+            )
+
+            conn.commit()
+            st.success(f"数据 '{aircraft_model}-{test_point}' 已成功添加！")
+            # 自动刷新以清空界面
+            st.rerun()
+        except Exception as e:
+            st.error(f"添加失败: {e}")
+        finally:
+            conn.close()
+def add_indirect_effect00():
     st.subheader("添加雷电间击环境数据")
 
     # 使用带边框的容器，视觉上像 Form，但允许内部交互
@@ -1811,70 +1505,76 @@ def batch_add_indirect_effects():
             progress_bar.empty()
 
 
-
 def smart_parse_filename(filename):
     """
-    智能解析文件名 (升级版：支持标准8段式 和 扩展10段式)
-
-    模式1 (标准): 飞机型号_测试点_激励_感应_对象_类型_单位_域.dat
-    模式2 (全量): 飞机型号_测试点_电流入出点_远端连接器_激励_感应_对象_类型_单位_域.dat
+    智能解析文件名 (修复波形识别逻辑版)
+    解决 A波/H波 同时出现时的识别混淆问题。
     """
     name_no_ext = filename.rsplit('.', 1)[0]
     parts = name_no_ext.split('_')
-
-    info = {}
     full_str = name_no_ext.upper()
 
-    # === 1. 位置解析 (核心修改点) ===
+    info = {}
 
-    # 初始化默认值
+    # === 1. 基础字段解析 (模式 A/B) ===
     info["aircraft_model"] = ""
     info["test_point"] = ""
-    info["current_in_out"] = ""  # 默认空
-    info["voltage_probe_point"] = ""  # 默认空
+    info["current_in_out"] = ""
+    info["voltage_probe_point"] = ""
 
     if len(parts) >= 10:
-        # >>> 命中全字段模式 (10段式) <<<
-        # 约定顺序: 型号(0)_测试点(1)_入出点(2)_远端(3)_激励(4)_感应(5)_对象(6)_类型(7)_单位(8)_域(9)
+        # 模式 B: 全字段
         info["aircraft_model"] = parts[0]
         info["test_point"] = parts[1]
-        info["current_in_out"] = parts[2]  # 解析电流入/出点
-        info["voltage_probe_point"] = parts[3]  # 解析远端连接器
-
+        info["current_in_out"] = parts[2]
+        info["voltage_probe_point"] = parts[3]
     elif len(parts) >= 2:
-        # >>> 命中标准模式 (通常8段) <<<
-        # 约定顺序: 型号(0)_测试点(1)... 后续靠关键词
+        # 模式 A: 标准
         info["aircraft_model"] = parts[0]
         info["test_point"] = parts[1]
-
     else:
-        # 只有一段的情况
         info["aircraft_model"] = name_no_ext
 
-    # === 2. 关键词智能修正 (保持原有逻辑，用于提取波形、单位等) ===
-    # 即使位置解析提取了部分信息，这里的关键词逻辑可以作为双重确认或补全
+    # === 2. 波形识别核心逻辑 (重大修改) ===
 
-    # --- 激励波形 ---
-    if "A波激励" in name_no_ext or ("A波" in name_no_ext and "激励" in name_no_ext):
+    # 步骤 A: 提取所有出现的波形 (保持在文件名中的出现顺序)
+    # 例如 "AG600_A波_H波.dat" -> ['A波', 'H波']
+    all_waves = re.findall(r'([AHah]波)', name_no_ext)
+    all_waves = [w.upper() for w in all_waves]  # 统一转大写
+
+    # 步骤 B: 尝试寻找显式的 "X波激励" 和 "X波感应"
+    explicit_exc = re.search(r'([AHah]波)激励', name_no_ext)
+    explicit_ind = re.search(r'([AHah]波)感应', name_no_ext)
+
+    # 步骤 C: 判定激励波形
+    if explicit_exc:
+        # 情况1: 明确写了 "A波激励"
+        info["waveform_type"] = explicit_exc.group(1).upper()
+    elif len(all_waves) >= 1:
+        # 情况2: 没明确写，但找到了波形，默认第1个是激励
+        info["waveform_type"] = all_waves[0]
+    else:
+        # 情况3: 啥都没找到，默认A波
         info["waveform_type"] = "A波"
-    elif "H波激励" in name_no_ext or ("H波" in name_no_ext and "激励" in name_no_ext):
-        info["waveform_type"] = "H波"
-    else:
-        # 模糊匹配逻辑
-        if "A波" in name_no_ext and "A波感应" not in name_no_ext:
-            info["waveform_type"] = "A波"
-        elif "H波" in name_no_ext and "H波感应" not in name_no_ext:
-            info["waveform_type"] = "H波"
-        else:
-            info["waveform_type"] = "A波"
 
-    # --- 感应波形 ---
-    if "A波感应" in name_no_ext:
-        info["induced_waveform"] = "A波"
-    elif "H波感应" in name_no_ext:
-        info["induced_waveform"] = "H波"
+    # 步骤 D: 判定感应波形
+    if explicit_ind:
+        # 情况1: 明确写了 "H波感应"
+        info["induced_waveform"] = explicit_ind.group(1).upper()
+    elif len(all_waves) >= 2:
+        # 情况2: 没明确写，但找到了2个波形 (例如 A波_H波)，默认第2个是感应
+        # 注意：这里要处理一种情况，就是文件名只有 "A波激励_线束"，all_waves=['A波']，此时不应把感应设为H
+        if explicit_exc and len(all_waves) == 1:
+            # 如果只有一个波且已用于激励，感应同激励
+            info["induced_waveform"] = info["waveform_type"]
+        else:
+            # 否则取第二个
+            info["induced_waveform"] = all_waves[1]
     else:
+        # 情况3: 只有一个波或没有波，默认感应 = 激励
         info["induced_waveform"] = info.get("waveform_type", "A波")
+
+    # === 3. 其他字段解析 (保持不变) ===
 
     # --- 被测对象 ---
     if "线束" in name_no_ext or "CABLE" in full_str:
@@ -1899,7 +1599,7 @@ def smart_parse_filename(filename):
         info["data_type"] = "voltage"
 
     # --- 单位 ---
-    info["data_unit"] = "V"  # 默认值
+    info["data_unit"] = "V"
     if info["data_type"] == "voltage":
         if "KV" in full_str:
             info["data_unit"] = "kV"
@@ -1915,10 +1615,91 @@ def smart_parse_filename(filename):
         elif "A" in full_str:
             info["data_unit"] = "A"
 
-    # 最后的兜底：如果描述为空，标记一下
     info["description"] = "批量导入"
 
     return info
+
+
+def smart_parse_filename00(filename):
+    """
+    智能解析文件名 (增强版)
+    支持:
+    1. 模式 A (标准8段): 飞机型号_测试点_任意描述...
+    2. 模式 B (全字段10段): 飞机型号_测试点_入出点_远端_激励_感应_对象_类型_单位_域
+    3. 灵活匹配: 解决如 "A波_H波" 这种简写无法识别感应波形的问题
+    """
+    name_no_ext = filename.rsplit('.', 1)[0]
+    # 替换中文空格或其他特殊分隔符为标准下划线，提高鲁棒性
+    name_no_ext = name_no_ext.replace(' ', '_').replace('__', '_')
+    parts = name_no_ext.split('_')
+    full_str = name_no_ext.upper()
+
+    info = {}
+
+    # === 1. 位置解析 (优先提取) ===
+    info["aircraft_model"] = parts[0] if len(parts) >= 1 else name_no_ext
+    info["test_point"] = parts[1] if len(parts) >= 2 else ""
+    info["current_in_out"] = ""
+    info["voltage_probe_point"] = ""
+
+    # 全字段模式识别 (模式 B)
+    if len(parts) >= 10:
+        info["current_in_out"] = parts[2]
+        info["voltage_probe_point"] = parts[3]
+        # 在全字段模式下，位置是最高优先级的
+        info["waveform_type"] = parts[4].replace("激励", "")
+        info["induced_waveform"] = parts[5].replace("感应", "")
+
+    # === 2. 关键词智能提取/修正 (针对简写情况优化) ===
+
+    # --- 激励波形识别 ---
+    # 如果位置解析没拿到，或者想二次确认
+    if "waveform_type" not in info:
+        if "H波激励" in name_no_ext or "H波" in parts:  # 增加对独立 "H波" 段的判断
+            info["waveform_type"] = "H波"
+        else:
+            info["waveform_type"] = "A波"  # 默认为A波
+
+    # --- 感应波形识别 (核心修改点) ---
+    if "induced_waveform" not in info:
+        # 1. 寻找显式包含 "感应" 的段
+        found_induced = False
+        for p in parts:
+            if "感应" in p:
+                info["induced_waveform"] = "H波" if "H" in p.upper() else "A波"
+                found_induced = True
+                break
+
+        # 2. 如果没找到 "感应" 字样，但存在多个波形描述 (如示例中的 A波_H波)
+        if not found_induced:
+            # 统计文件名中波形出现的次数
+            wave_parts = [p for p in parts if p in ["A波", "H波", "A波激励", "H波激励", "A波感应", "H波感应"]]
+            if len(wave_parts) >= 2:
+                # 假设第二个出现的波形是感应波形
+                info["induced_waveform"] = "H波" if "H" in wave_parts[1].upper() else "A波"
+            else:
+                # 兜底逻辑：同激励波形
+                info["induced_waveform"] = info["waveform_type"]
+
+    # --- 其余字段识别 (被测对象/数据域/类型/单位) ---
+    # 被测对象
+    info["test_object_type"] = "针脚" if ("针脚" in name_no_ext or "PIN" in full_str) else "线束"
+
+    # 数据域
+    info["data_domain"] = "频域数据" if ("频域" in name_no_ext or "FREQ" in full_str) else "时域数据"
+
+    # 类型与单位
+    if "电流" in name_no_ext or "CURRENT" in full_str or "A" in parts or "MA" in full_str:
+        info["data_type"] = "current"
+        info["data_unit"] = "mA" if "MA" in full_str else ("kA" if "KA" in full_str else "A")
+    else:
+        info["data_type"] = "voltage"
+        info["data_unit"] = "mV" if "MV" in full_str else ("kV" if "KV" in full_str else "V")
+
+    info["description"] = "批量导入"
+    return info
+
+
 
 
 # 关于页面
