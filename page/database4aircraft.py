@@ -3,22 +3,56 @@ import sqlite3
 import pandas as pd
 import numpy as np
 import os
-from io import BytesIO, StringIO
+import io
+import zipfile
 from datetime import datetime
-import wyz_io
+from PIL import Image
+import matplotlib.pyplot as plt
 
-# 初始化数据库
+# 设置 Matplotlib 中文字体 (防止中文乱码)
+plt.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+plt.rcParams['axes.unicode_minus'] = False
+
+
+# 模拟 wyz_io 模块，用于本地测试
+class MockWyzIo:
+    @staticmethod
+    def image_to_base64(path):
+        import base64
+        try:
+            with open(path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode()
+        except FileNotFoundError:
+            return ""
+
+
+try:
+    import wyz_io
+except ImportError:
+    wyz_io = MockWyzIo()
+
+
+# ================= 数据库操作模块 =================
+
+def create_connection():
+    conn = sqlite3.connect('shielding_design_v2.db')
+    conn.execute("PRAGMA foreign_keys = ON")  # 开启外键约束以支持级联删除
+    return conn
+
+
 def init_db():
-    conn = sqlite3.connect('shielding_design.db')###
+    conn = create_connection()
     c = conn.cursor()
-    # 创建基体材料表
+
+    # 1. 创建基体材料表
     c.execute('''CREATE TABLE IF NOT EXISTS materials
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   name TEXT,
                   model TEXT,
                   supplier TEXT,
                   standard TEXT)''')
-    # 创建屏蔽设计表（修改结构以支持铺层详情）
+
+    # 2. 创建主表
     c.execute('''CREATE TABLE IF NOT EXISTS shielding_designs
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   test_id TEXT UNIQUE,
@@ -26,10 +60,37 @@ def init_db():
                   thickness_summary TEXT,
                   layer_details TEXT,
                   shielding_material TEXT,
-                  shielding_data TEXT,
-                  dielectric_data TEXT,
                   create_time TIMESTAMP,
                   update_time TIMESTAMP)''')
+
+    # 3. 创建图片存储表
+    c.execute('''CREATE TABLE IF NOT EXISTS design_images
+                 (img_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  test_id TEXT,
+                  image_name TEXT,
+                  image_data BLOB,
+                  upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (test_id) REFERENCES shielding_designs (test_id) ON DELETE CASCADE)''')
+
+    # 4. 创建12组dat文件存储表
+    c.execute('''CREATE TABLE IF NOT EXISTS design_dat_files
+                 (file_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  test_id TEXT,
+                  data_source TEXT,
+                  polarization TEXT,
+                  data_type TEXT,
+                  freq_unit TEXT DEFAULT 'GHz',
+                  file_name TEXT,
+                  file_data BLOB,
+                  upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (test_id) REFERENCES shielding_designs (test_id) ON DELETE CASCADE)''')
+
+    # 数据库结构升级补丁：兼容如果已经存在旧的 design_dat_files 表，自动增加 freq_unit 列
+    try:
+        c.execute("SELECT freq_unit FROM design_dat_files LIMIT 1")
+    except sqlite3.OperationalError:
+        c.execute("ALTER TABLE design_dat_files ADD COLUMN freq_unit TEXT DEFAULT 'GHz'")
+        conn.commit()
 
     # 插入预定义的基体材料数据
     materials_data = [
@@ -50,115 +111,55 @@ def init_db():
         ("防雷击胶膜", "HTTM-2", "合肥航太", "——"),
         ("碳膜", "——", "领航复材", "——")
     ]
-    # 检查是否已插入数据
     c.execute("SELECT COUNT(*) FROM materials")
     if c.fetchone()[0] == 0:
         c.executemany("INSERT INTO materials (name, model, supplier, standard) VALUES (?, ?, ?, ?)", materials_data)
+
     conn.commit()
     conn.close()
 
-# 初始化数据库
+
 init_db()
-# 获取所有基体材料
+
+# DAT文件的12种固定组合配置
+DAT_CONFIGS = [
+    ("计算", "HH（水平极化）", "介电常数文件"),
+    ("计算", "HH（水平极化）", "电导率文件"),
+    ("计算", "HH（水平极化）", "屏蔽效能文件"),
+    ("计算", "VV（垂直极化）", "介电常数文件"),
+    ("计算", "VV（垂直极化）", "电导率文件"),
+    ("计算", "VV（垂直极化）", "屏蔽效能文件"),
+    ("测试", "HH（水平极化）", "介电常数文件"),
+    ("测试", "HH（水平极化）", "电导率文件"),
+    ("测试", "HH（水平极化）", "屏蔽效能文件"),
+    ("测试", "VV（垂直极化）", "介电常数文件"),
+    ("测试", "VV（垂直极化）", "电导率文件"),
+    ("测试", "VV（垂直极化）", "屏蔽效能文件"),
+]
+
+
 def get_materials():
-    conn = sqlite3.connect('shielding_design.db')
+    conn = create_connection()
     c = conn.cursor()
     c.execute("SELECT id, name, model, supplier, standard FROM materials")
     materials = c.fetchall()
     conn.close()
     return materials
 
-# 添加新的屏蔽设计（修改以支持铺层详情）
-def add_shielding_design(test_id, structure_type, thickness_summary, layer_details,
-                         shielding_material, shielding_data, dielectric_data):
-    conn = sqlite3.connect('shielding_design.db')
+
+def delete_material(material_id):
+    conn = create_connection()
     c = conn.cursor()
     try:
-        now = datetime.now()
-        c.execute(
-            """INSERT INTO shielding_designs 
-            (test_id, structure_type, thickness_summary, layer_details,
-             shielding_material, shielding_data, dielectric_data, create_time, update_time) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (test_id, structure_type, thickness_summary, layer_details,
-             shielding_material, shielding_data, dielectric_data, now, now))
+        c.execute("DELETE FROM materials WHERE id=?", (material_id,))
         conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
+        return True, "材料删除成功"
     finally:
         conn.close()
-# 更新屏蔽设计（修改以支持铺层详情）
-def update_shielding_design(test_id, structure_type, thickness_summary, layer_details,
-                            shielding_material, shielding_data, dielectric_data):
-    conn = sqlite3.connect('shielding_design.db')
-    c = conn.cursor()
-    now = datetime.now()
-    c.execute(
-        """UPDATE shielding_designs 
-        SET structure_type=?, thickness_summary=?, layer_details=?,
-            shielding_material=?, shielding_data=?, dielectric_data=?, update_time=?
-        WHERE test_id=?""",
-        (structure_type, thickness_summary, layer_details,
-         shielding_material, shielding_data, dielectric_data, now, test_id))
-    conn.commit()
-    conn.close()
 
 
-# 删除屏蔽设计
-def delete_shielding_design(test_id):
-    conn = sqlite3.connect('shielding_design.db')
-    c = conn.cursor()
-    c.execute("DELETE FROM shielding_designs WHERE test_id=?", (test_id,))
-    conn.commit()
-    conn.close()
-
-
-# 查询屏蔽设计（修改以支持新的字段）
-def get_shielding_designs(structure_type=None, thickness=None, shielding_material=None):
-    conn = sqlite3.connect('shielding_design.db')
-    c = conn.cursor()
-
-    query = """SELECT s.test_id, s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
-                      s.shielding_data, s.dielectric_data, s.create_time, s.update_time
-               FROM shielding_designs s
-               WHERE 1=1"""
-
-    params = []
-
-    if structure_type:
-        query += " AND s.structure_type = ?"
-        params.append(structure_type)
-
-    if thickness:
-        query += " AND s.thickness_summary LIKE ?"
-        params.append(f"%{thickness}%")
-
-    if shielding_material:
-        query += " AND s.shielding_material = ?"
-        params.append(shielding_material)
-
-    c.execute(query, params)
-    designs = c.fetchall()
-    conn.close()
-    return designs
-
-# 获取单个屏蔽设计
-def get_shielding_design(test_id):
-    conn = sqlite3.connect('shielding_design.db')
-    c = conn.cursor()
-    c.execute("""SELECT s.test_id, s.structure_type, s.thickness_summary, s.layer_details, s.shielding_material,
-                        s.shielding_data, s.dielectric_data
-                 FROM shielding_designs s
-                 WHERE s.test_id = ?""", (test_id,))
-    design = c.fetchone()
-    conn.close()
-    return design
-##20250805
-# 在原有代码基础上添加以下函数
-# 添加新的基体材料
 def add_material(name, model, supplier, standard):
-    conn = sqlite3.connect('shielding_design.db')
+    conn = create_connection()
     c = conn.cursor()
     try:
         c.execute("INSERT INTO materials (name, model, supplier, standard) VALUES (?, ?, ?, ?)",
@@ -171,569 +172,497 @@ def add_material(name, model, supplier, standard):
         conn.close()
 
 
-# 删除基体材料
-def delete_material(material_id):
-    conn = sqlite3.connect('shielding_design.db')
+def get_shielding_designs(structure_type=None, thickness=None, shielding_material=None):
+    conn = create_connection()
     c = conn.cursor()
-    try:
-        c.execute("DELETE FROM materials WHERE id=?", (material_id,))
-        conn.commit()
-        return True, "材料删除成功"
-    finally:
-        conn.close()
+    query = """SELECT test_id, structure_type, thickness_summary, layer_details, shielding_material, create_time, update_time
+               FROM shielding_designs WHERE 1=1"""
+    params = []
+    if structure_type:
+        query += " AND structure_type = ?"
+        params.append(structure_type)
+    if thickness:
+        query += " AND thickness_summary LIKE ?"
+        params.append(f"%{thickness}%")
+    if shielding_material:
+        query += " AND shielding_material = ?"
+        params.append(shielding_material)
+
+    c.execute(query, params)
+    designs = c.fetchall()
+    conn.close()
+    return designs
 
 
-# 主页面
+# ================= UI 页面模块 =================
+
 def main():
-    #########step 0:  显示公司logo
     LOGO_PATH = "company_logo.jpg"
-    # 检查图片是否存在
-    if not os.path.exists(LOGO_PATH):
-        st.error("公司logo图片未找到，请确保company_logo.jpg文件存在")
-        logo_html = ""
-    else:
-        logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+    logo_base64 = wyz_io.image_to_base64(LOGO_PATH)
+    if logo_base64:
         logo_html = f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
             <img src="data:image/jpeg;base64,{logo_base64}" alt="公司标徽" style="height: 60px;">
             <h3 style="margin: 0; font-size: 42px;">中航通飞华南飞机工业有限公司</h3>
         </div>
         """
-    st.markdown(logo_html, unsafe_allow_html=True)
+        st.markdown(logo_html, unsafe_allow_html=True)
 
     st.title("复合材料飞机结构电磁屏蔽设计数据库系统")
-    # 侧边栏导航
-    #st.sidebar.title("导航")
-    choice = st.sidebar.radio(
-        "选择操作类型",
-        ("添加新设计", "修改设计", "删除设计", "查询设计", "材料管理")
-    )
 
-    # 获取所有基体材料
+    menu_options = ["添加新设计", "修改设计", "删除设计", "查询设计", "材料管理"]
+    choice = st.sidebar.radio("选择操作类型", menu_options)
+
     materials = get_materials()
     material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
-
-    # 结构形式选项
-    structure_types = ["层压", "蜂窝夹层", "泡沫夹层"]
-
-    # 屏蔽防护材料选项
-    shielding_materials = ["铜网", "碳基膜"]
+    structure_types = ["单向带层板", "织物层板", "织物夹层", "层压", "蜂窝夹层", "泡沫夹层"]
+    shielding_materials = ["铜网", "碳基膜", "N/A"]
 
     if choice == "材料管理":
-        st.subheader("基体材料管理")
-
-        # 添加材料选项卡
-        tab1, tab2 = st.tabs(["添加新材料", "删除材料"])
-
-        with tab1:
-            st.write("添加新的基体材料")
-            with st.form("add_material_form"):
-                name = st.text_input("材料名称*")
-                model = st.text_input("牌号*")
-                supplier = st.text_input("供应商")
-                standard = st.text_input("标准")
-
-                submitted = st.form_submit_button("添加")
-                if submitted:
-                    if not name or not model:
-                        st.error("材料名称和牌号为必填项")
-                    else:
-                        if add_material(name, model, supplier, standard):
-                            st.success("材料添加成功！")
-                            # 刷新材料列表
-                            materials = get_materials()
-                            material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
-                        else:
-                            st.error("添加材料失败，可能是材料已存在")
-
-        with tab2:
-            st.write("删除基体材料")
-            if not materials:
-                st.warning("没有可删除的材料数据")
-            else:
-                material_list = [f"{m[0]}: {m[1]} ({m[2]}) - {m[3]}" for m in materials]
-                selected_material = st.selectbox(
-                    "选择要删除的材料",
-                    options=material_list,
-                    key="delete_material_select"
-                )
-
-                # 获取选择的材料ID
-                selected_id = int(selected_material.split(":")[0])
-
-                if st.button("删除", key="delete_material_button"):
-                    success, message = delete_material(selected_id)
-                    if success:
-                        st.success(message)
-                        # 刷新材料列表
-                        materials = get_materials()
-                        material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
-                    else:
-                        st.error(message)
-
-    if choice == "添加新设计":
-        st.subheader("添加新的复合材料电磁屏蔽设计")
-        test_id = st.text_input("试验件编号*", key="add_test_id")
-
-        # 结构形式选择
-        structure_type = st.selectbox(
-            "结构形式*",
-            options=structure_types,
-            key="add_structure_type"
-        )
-        # 铺层设置 - 采用程序2的即时响应机制
-        st.subheader("铺层参数设置")
-        layer_count = st.number_input("铺层层数*", min_value=1, value=1, step=1, key="add_layer_count")
-
-        # 动态生成铺层输入
-        layers = []
-        for i in range(layer_count):
-            st.write(f"第{i + 1}层")
-            cols = st.columns([3, 1, 1])
-            with cols[0]:
-                material = st.selectbox(
-                    f"材料类型",
-                    options=list(material_options.keys()),
-                    key=f"add_mat_{i}"
-                )
-            with cols[1]:
-                thickness = st.number_input(
-                    f"厚度(mm)",
-                    min_value=0.01,
-                    value=0.1,
-                    step=0.01,
-                    key=f"add_thk_{i}"
-                )
-            with cols[2]:
-                angle = st.number_input(
-                    f"角度(°)",
-                    min_value=0,
-                    max_value=90,
-                    value=0,
-                    step=5,
-                    key=f"add_ang_{i}"
-                )
-            layers.append({
-                "layer_num": i + 1,
-                "material": material,
-                "thickness": thickness,
-                "angle": angle
-            })
-
-        # 厚度汇总
-        thickness_summary = st.text_input("厚度汇总描述*", key="add_thickness_summary")
-
-        # 屏蔽防护材料选择
-        shielding_material = st.selectbox(
-            "屏蔽防护材料*",
-            options=shielding_materials,
-            key="add_shielding_material"
-        )
-
-        # 屏蔽效能数据上传
-        st.markdown("**复合材料在各频率下的屏蔽效能**")
-        shielding_file = st.file_uploader(
-            """上传屏蔽效能数据文件（txt格式，两列：频率(Hz)、屏蔽效能）:\n
-            示例格式：\n
-            100    1\n
-            200    1\n
-            300    1""",
-            type=["txt"],
-            key="add_shielding_file"
-        )
-
-        # 介电常数数据上传
-        st.markdown("**介电常数实部和虚部**")
-        dielectric_file = st.file_uploader(
-            """上传介电常数数据文件（txt格式，三列：频率(Hz)、实部、虚部）：\n
-            示例格式：\n
-            100    1    1\n
-            200    1    1\n
-            300    1    1""",
-            type=["txt"],
-            key="add_dielectric_file"
-        )
-
-        if st.button("提交"):
-            if not test_id:
-                st.error("试验件编号不能为空")
-            elif not thickness_summary:
-                st.error("厚度汇总描述不能为空")
-            elif not shielding_file or not dielectric_file:
-                st.error("请上传屏蔽效能和介电常数数据文件")
-            else:
-                # 处理铺层数据为JSON格式
-                layer_details = "\n".join(
-                    [f"第{layer['layer_num']}层: {layer['material']}, 厚度: {layer['thickness']}mm, 角度: {layer['angle']}°"
-                     for layer in layers])
-
-                # 读取文件数据
-                shielding_data = shielding_file.getvalue().decode("utf-8")
-                dielectric_data = dielectric_file.getvalue().decode("utf-8")
-
-                # 添加到数据库
-                if add_shielding_design(
-                        test_id, structure_type,
-                        thickness_summary, layer_details,
-                        shielding_material, shielding_data, dielectric_data
-                ):
-                    st.success("设计数据添加成功！")
-                else:
-                    st.error("试验件编号已存在，请使用不同的编号")
-
+        manage_materials_page(materials, material_options)
+    elif choice == "添加新设计":
+        add_design_page(structure_types, shielding_materials, material_options)
     elif choice == "修改设计":
-        st.subheader("修改复合材料电磁屏蔽设计")
-
-        # 获取所有设计用于选择
-        designs = get_shielding_designs()
-        design_options = {d[0]: d for d in designs}
-
-        if not design_options:
-            st.warning("没有可修改的设计数据")
-        else:
-            selected_test_id = st.selectbox(
-                "选择要修改的设计（试验件编号）",
-                options=list(design_options.keys()),
-                key="modify_select"
-            )
-
-            if selected_test_id:
-                design = design_options[selected_test_id]
-
-                # 结构形式选择
-                structure_type = st.selectbox(
-                    "结构形式*",
-                    options=structure_types,
-                    index=structure_types.index(design[1]),
-                    key="modify_structure_type"
-                )
-
-                # 铺层设置 - 采用即时响应机制
-                st.subheader("铺层参数修改")
-
-                # 解析原有的铺层详情
-                layer_descriptions = design[3].split('\n') if design[3] else []
-                initial_layer_count = len(layer_descriptions)
-
-                layer_count = st.number_input(
-                    "铺层层数*",
-                    min_value=1,
-                    value=initial_layer_count,
-                    step=1,
-                    key="modify_layer_count"
-                )
-
-                # 动态生成铺层输入
-                layers = []
-                for i in range(layer_count):
-                    st.write(f"第{i + 1}层")
-                    cols = st.columns([3, 1, 1])
-
-                    # 默认值
-                    default_mat = "碳纤维单向带预浸料"
-                    default_thk = 0.1
-                    default_ang = 0
-
-                    # 尝试解析原有数据
-                    if i < initial_layer_count:
-                        try:
-                            parts = layer_descriptions[i].split(',')
-                            if len(parts) >= 3:
-                                default_mat = parts[0].split(':')[1].strip()
-                                default_thk = float(parts[1].split(':')[1].replace('mm', '').strip())
-                                default_ang = int(parts[2].split(':')[1].replace('°', '').strip())
-                        except:
-                            pass
-
-                    with cols[0]:
-                        material = st.selectbox(
-                            f"材料类型",
-                            options=list(material_options.keys()),
-                            index=list(material_options.keys()).index(default_mat) if default_mat in list(material_options.keys()) else 0,
-                            key=f"modify_mat_{i}"
-                        )
-                    with cols[1]:
-                        thickness = st.number_input(
-                            f"厚度(mm)",
-                            min_value=0.01,
-                            value=default_thk,
-                            step=0.01,
-                            key=f"modify_thk_{i}"
-                        )
-                    with cols[2]:
-                        angle = st.number_input(
-                            f"角度(°)",
-                            min_value=0,
-                            max_value=90,
-                            value=default_ang,
-                            step=5,
-                            key=f"modify_ang_{i}"
-                        )
-                    layers.append({
-                        "layer_num": i + 1,
-                        "material": material,
-                        "thickness": thickness,
-                        "angle": angle
-                    })
-
-                # 厚度汇总
-                thickness_summary = st.text_input(
-                    "厚度汇总描述*",
-                    value=design[2],
-                    key="modify_thickness_summary"
-                )
-
-                # 屏蔽防护材料选择
-                shielding_material = st.selectbox(
-                    "屏蔽防护材料*",
-                    options=shielding_materials,
-                    index=shielding_materials.index(design[4]),
-                    key="modify_shielding_material"
-                )
-
-                # 显示当前屏蔽效能数据
-                st.markdown("**当前屏蔽效能数据**")
-                shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None, names=["频率", "屏蔽效能"])
-                st.dataframe(shielding_df)
-
-                # 屏蔽效能数据上传
-                st.markdown("**更新屏蔽效能数据**")
-                shielding_file = st.file_uploader(
-                    "上传新的屏蔽效能数据文件（txt格式，两列：频率(Hz)、屏蔽效能）",
-                    type=["txt"],
-                    key="modify_shielding_file"
-                )
-
-                # 显示当前介电常数数据
-                st.markdown("**当前介电常数数据**")
-                dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None, names=["频率", "实部", "虚部"])
-                st.dataframe(dielectric_df)
-
-                # 介电常数数据上传
-                st.markdown("**更新介电常数数据**")
-                dielectric_file = st.file_uploader(
-                    "上传新的介电常数数据文件（txt格式，三列：频率（Hz）、实部、虚部）",
-                    type=["txt"],
-                    key="modify_dielectric_file"
-                )
-
-                if st.button("更新"):
-                    # 处理铺层数据
-                    layer_details = "\n".join(
-                        [
-                            f"第{layer['layer_num']}层: {layer['material']}, 厚度: {layer['thickness']}mm, 角度: {layer['angle']}°"
-                            for layer in layers])
-
-                    # 使用新数据或保留原数据
-                    new_shielding_data = shielding_file.getvalue().decode("utf-8") if shielding_file else design[5]
-                    new_dielectric_data = dielectric_file.getvalue().decode("utf-8") if dielectric_file else design[6]
-
-                    # 更新数据库
-                    update_shielding_design(
-                        selected_test_id, structure_type,
-                        thickness_summary, layer_details,
-                        shielding_material, new_shielding_data, new_dielectric_data
-                    )
-                    st.success("设计数据更新成功！")
-
+        update_design_page(structure_types, shielding_materials, material_options)
     elif choice == "删除设计":
-        st.subheader("删除复合材料电磁屏蔽设计")
-
-        # 获取所有设计用于选择
-        designs = get_shielding_designs()
-        design_options = {d[0]: d for d in designs}
-
-        if not design_options:
-            st.warning("没有可删除的设计数据")
-        else:
-            selected_test_id = st.selectbox(
-                "选择要删除的设计（试验件编号）",
-                options=list(design_options.keys()),
-                key="delete_select"
-            )
-
-            if selected_test_id:
-                design = design_options[selected_test_id]
-
-                st.warning("以下设计将被删除，此操作不可恢复！")
-                st.write(f"试验件编号: {design[0]}")
-                st.write(f"结构形式: {design[1]}")
-                st.write(f"厚度: {design[2]}")
-                st.write(f"屏蔽防护材料: {design[4]}")
-
-                if st.button("确认删除"):
-                    delete_shielding_design(selected_test_id)
-                    st.success("设计数据已删除")
-
+        delete_design_page()
     elif choice == "查询设计":
-        st.subheader("查询复合材料电磁屏蔽设计")
-        with st.form("search_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                # 结构形式筛选
-                structure_type_filter = st.selectbox(
-                    "结构形式",
-                    options=[""] + structure_types,
-                    key="search_structure_type"
-                )
+        query_design_page(structure_types, materials, shielding_materials)
 
-                # 基体材料筛选（暂时弃用，因为一个结构件可能存在多个）
-                basematerial_type_filter = st.selectbox(
-                    "基体材料",
-                    options=[""] + materials,
-                    key="search_basematerial_type"
-                )
 
-            with col2:
-                # 厚度筛选
-                thickness_filter = st.text_input(
-                    "厚度",
-                    key="search_thickness"
-                )
-
-                # 屏蔽防护材料筛选
-                shielding_material_filter = st.selectbox(
-                    "屏蔽防护材料",
-                    options=[""] + shielding_materials,
-                    key="search_shielding_material"
-                )
-
-            submitted = st.form_submit_button("查询")
-
-        if submitted:
-            # 执行查询
-            designs = get_shielding_designs(
-                structure_type=structure_type_filter if structure_type_filter else None,
-                thickness=thickness_filter if thickness_filter else None,
-                shielding_material=shielding_material_filter if shielding_material_filter else None
-            )
-            st.session_state["search_results"] = designs  # 保存查询结果
-            st.session_state["show_results"] = True  # 标记需要显示结果
-            # 重置选择状态，避免查询结果变化后索引错误
-            if "selected_id" in st.session_state:
-                del st.session_state["selected_id"]
+def manage_materials_page(materials, material_options):
+    st.subheader("基体材料管理")
+    tab1, tab2 = st.tabs(["添加新材料", "删除材料"])
+    with tab1:
+        with st.form("add_material_form"):
+            name = st.text_input("材料名称*")
+            model = st.text_input("牌号*")
+            supplier = st.text_input("供应商")
+            standard = st.text_input("标准")
+            if st.form_submit_button("添加"):
+                if not name or not model:
+                    st.error("材料名称和牌号为必填项")
+                else:
+                    if add_material(name, model, supplier, standard):
+                        st.success("材料添加成功！请刷新页面。")
+                    else:
+                        st.error("添加失败，材料可能已存在")
+    with tab2:
+        if not materials:
+            st.warning("无可用材料")
         else:
-            # 如果未提交查询，但之前有结果，沿用之前的结果
-            designs = st.session_state.get("search_results", [])
-            st.session_state["show_results"] = st.session_state.get("show_results", False)
-        if st.session_state["show_results"]:
-            if not designs:
-                st.warning("没有找到匹配的设计数据")
-            else:
-                st.success(f"找到 {len(designs)} 条匹配的设计数据")
-                # 显示简要结果列表
-                summary_data = []
-                for design in designs:
-                    summary_data.append({
-                        "试验件编号": design[0],
-                        "结构形式": design[1],
-                        "厚度": design[2],
-                        "屏蔽防护材料": design[4],
-                        "创建时间": design[7],
-                        "更新时间": design[8]
-                    })
-                st.dataframe(pd.DataFrame(summary_data))
-
-                ####start这里设置一个下拉菜单，根据编号进行选择，如果注释掉则一起下载 wyz20250722
-                # 创建选择框
-                record_ids = [str(r[0]) for r in designs]
-                # 从session_state读取上次选择的ID，默认选第一个
-                default_idx = 0
-                if "selected_id" in st.session_state and st.session_state["selected_id"] in record_ids:
-                    default_idx = record_ids.index(st.session_state["selected_id"])
-
-                # 选择记录时，将ID存入session_state
-                selected_id = st.selectbox(
-                    "选择记录查看详细数据并下载",
-                    record_ids,
-                    index=default_idx,
-                    key="selected_id"  # 绑定到session_state的"selected_id"
-                )
-                #st.session_state["selected_id"] = selected_id  # 保存当前选择
-
-                # 筛选出选中的记录
-                selected_index = record_ids.index(selected_id)
-                selected_design = [designs[selected_index]]  # 转为列表，保持格式一致
-                # 添加导出功能
-                st.subheader("数据导出")
-                output = BytesIO()
-                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                    # 导出摘要数据
-                    pd.DataFrame([summary_data[selected_index]]).to_excel(writer, sheet_name='设计摘要', index=False)
-                    # 为每个设计创建单独的工作表
-                    for design in selected_design:
-                        # 屏蔽效能数据
-                        try:
-                            shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None,
-                                                       names=["频率", "屏蔽效能"])
-                            shielding_df.to_excel(writer, sheet_name=f"{design[0]}_屏蔽效能", index=False)
-                        except:
-                            pass
-
-                        # 介电常数数据
-                        try:
-                            dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None,
-                                                        names=["频率", "实部", "虚部"])
-                            dielectric_df.to_excel(writer, sheet_name=f"{design[0]}_介电常数", index=False)
-                        except:
-                            pass
-
-                # 准备下载按钮
-                output.seek(0)
-                st.download_button(
-                    label="导出为Excel文件",
-                    data=output,
-                    file_name='屏蔽设计数据.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-
-                # 使用expander来显示详细数据
-                for design in selected_design:
-                    with st.expander(f"详细数据 - {design[0]}"):
-                        st.subheader("详细设计数据")
-                        col1, col2 = st.columns(2)
-
-                        with col1:
-                            st.write(f"**试验件编号**: {design[0]}")
-                            st.write(f"**结构形式**: {design[1]}")
-                            st.write(f"**厚度汇总**: {design[2]}")
-
-                        with col2:
-                            st.write(f"**屏蔽防护材料**: {design[4]}")
-                            st.write(f"**创建时间**: {design[7]}")
-                            st.write(f"**更新时间**: {design[8]}")
-
-                        # 显示铺层详情
-                        st.subheader("铺层详情")
-                        if design[3]:
-                            st.text(design[3])
-                        else:
-                            st.warning("无铺层详情数据")
-
-                        # 显示屏蔽效能数据
-                        st.subheader("屏蔽效能数据")
-                        try:
-                            shielding_df = pd.read_csv(StringIO(design[5]), sep="\s+", header=None,
-                                                       names=["频率", "屏蔽效能"])
-                            st.dataframe(shielding_df)
-                            st.line_chart(shielding_df.set_index("频率"))
-                        except Exception as e:
-                            st.error(f"解析屏蔽效能数据失败: {str(e)}")
-
-                        # 显示介电常数数据
-                        st.subheader("介电常数数据")
-                        try:
-                            dielectric_df = pd.read_csv(StringIO(design[6]), sep="\s+", header=None,
-                                                        names=["频率", "实部", "虚部"])
-                            st.dataframe(dielectric_df)
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.line_chart(dielectric_df[["频率", "实部"]].set_index("频率"))
-                            with col2:
-                                st.line_chart(dielectric_df[["频率", "虚部"]].set_index("频率"))
-                        except Exception as e:
-                            st.error(f"解析介电常数数据失败: {str(e)}")
+            material_list = [f"{m[0]}: {m[1]} ({m[2]}) - {m[3]}" for m in materials]
+            selected = st.selectbox("选择要删除的材料", material_list)
+            if st.button("删除"):
+                selected_id = int(selected.split(":")[0])
+                success, msg = delete_material(selected_id)
+                if success:
+                    st.success(msg)
+                else:
+                    st.error(msg)
 
 
-#if __name__ == "__main__":
+def add_design_page(structure_types, shielding_materials, material_options):
+    st.subheader("添加新的复合材料电磁屏蔽设计")
+
+    test_id = st.text_input("试验件编号*", key="add_test_id")
+    structure_type = st.selectbox("结构类型*", options=structure_types)
+
+    st.subheader("铺层参数设置")
+    layer_count = st.number_input("铺层层数*", min_value=1, value=1, step=1)
+    layers = []
+    for i in range(layer_count):
+        cols = st.columns([3, 1, 1])
+        with cols[0]:
+            mat = st.selectbox(f"第{i + 1}层 材料", list(material_options.keys()), key=f"mat_{i}")
+        with cols[1]:
+            thk = st.number_input(f"厚度(mm)", 0.01, 0.1, 0.01, key=f"thk_{i}")
+        with cols[2]:
+            # 支持负数角度
+            ang = st.number_input(f"角度(°)", min_value=-90, max_value=90, value=0, step=5, key=f"ang_{i}")
+        layers.append(f"第{i + 1}层: {mat}, 厚度: {thk}mm, 角度: {ang}°")
+
+    thickness_summary = st.text_input("厚度汇总描述*")
+    shielding_material = st.selectbox("屏蔽防护材料*", options=shielding_materials)
+
+    st.markdown("---")
+    st.subheader("试验件图片上传")
+    if 'add_img_count' not in st.session_state:
+        st.session_state['add_img_count'] = 1
+
+    uploaded_images = []
+    for i in range(st.session_state['add_img_count']):
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            img_file = st.file_uploader(f"图片 {i + 1}", type=["jpg", "png", "jpeg"], key=f"img_f_{i}")
+        with c2:
+            img_name = st.text_input(f"图片 {i + 1} 描述", key=f"img_n_{i}")
+        uploaded_images.append((img_file, img_name))
+
+    c_add, c_rm = st.columns([1, 10])
+    with c_add:
+        if st.button("➕增加图片"): st.session_state['add_img_count'] += 1; st.rerun()
+    with c_rm:
+        if st.session_state['add_img_count'] > 1 and st.button("➖移除图片"):
+            st.session_state['add_img_count'] -= 1;
+            st.rerun()
+
+    st.markdown("---")
+    st.subheader("12组测试/计算数据上传 (.dat)")
+    st.info("文件数据格式：两列，第一列频率，第二列数值。请为其指定频率单位（默认GHz）")
+
+    dat_uploads = {}
+    dat_units = {}
+    tab_calc, tab_test = st.tabs(["💻 计算数据", "🔬 测试数据"])
+
+    def render_dat_uploaders(source_name, tab):
+        with tab:
+            c_hh, c_vv = st.columns(2)
+            for config in DAT_CONFIGS:
+                src, pol, dtype = config
+                if src != source_name: continue
+
+                target_col = c_hh if "HH" in pol else c_vv
+                with target_col:
+                    st.markdown(f"**{pol} - {dtype}**")
+                    cc1, cc2 = st.columns([3, 1])
+                    with cc1:
+                        file_key = f"{src}_{pol}_{dtype}"
+                        dat_uploads[config] = st.file_uploader("上传文件", type=['dat', 'txt'], key=file_key,
+                                                               label_visibility="collapsed")
+                    with cc2:
+                        unit_key = f"unit_{src}_{pol}_{dtype}"
+                        dat_units[config] = st.selectbox("单位", ["GHz", "MHz", "Hz"], index=0, key=unit_key,
+                                                         label_visibility="collapsed")
+
+    render_dat_uploaders("计算", tab_calc)
+    render_dat_uploaders("测试", tab_test)
+
+    if st.button("🚀 提交全部数据", type="primary"):
+        if not test_id or not thickness_summary:
+            st.error("试验件编号和厚度汇总为必填项！")
+            return
+
+        conn = create_connection()
+        c = conn.cursor()
+        try:
+            now = datetime.now()
+            layer_details_str = "\n".join(layers)
+            c.execute("""INSERT INTO shielding_designs 
+                         (test_id, structure_type, thickness_summary, layer_details, shielding_material, create_time, update_time)
+                         VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                      (test_id, structure_type, thickness_summary, layer_details_str, shielding_material, now, now))
+
+            for f, n in uploaded_images:
+                if f:
+                    c.execute("INSERT INTO design_images (test_id, image_name, image_data) VALUES (?, ?, ?)",
+                              (test_id, n if n else f.name, f.read()))
+
+            for config, file_obj in dat_uploads.items():
+                if file_obj:
+                    src, pol, dtype = config
+                    unit = dat_units[config]
+                    c.execute("""INSERT INTO design_dat_files 
+                                 (test_id, data_source, polarization, data_type, freq_unit, file_name, file_data)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                              (test_id, src, pol, dtype, unit, file_obj.name, file_obj.read()))
+
+            conn.commit()
+            st.success("🎉 数据全部入库成功！")
+        except sqlite3.IntegrityError:
+            st.error("试验件编号已存在！")
+        except Exception as e:
+            conn.rollback()  # 逻辑修复四：增加回滚防止产生脏数据
+            st.error(f"发生错误: {e}")
+        finally:
+            conn.close()
+
+
+def update_design_page(structure_types, shielding_materials, material_options):
+    st.subheader("修改复合材料电磁屏蔽设计")
+
+    designs = get_shielding_designs()
+    if not designs:
+        st.warning("没有可修改的设计数据")
+        return
+
+    design_options = {d[0]: d for d in designs}
+    selected_test_id = st.selectbox("选择要修改的试验件编号", list(design_options.keys()))
+
+    if selected_test_id:
+        design = design_options[selected_test_id]
+        conn = create_connection()
+
+        st.markdown("#### 1. 基础信息")
+        new_structure_type = st.selectbox("结构类型*", options=structure_types,
+                                          index=structure_types.index(design[1]) if design[1] in structure_types else 0)
+        new_thickness = st.text_input("厚度汇总描述*", value=design[2])
+        new_shielding_mat = st.selectbox("屏蔽防护材料*", options=shielding_materials,
+                                         index=shielding_materials.index(design[4]) if design[
+                                                                                           4] in shielding_materials else 0)
+
+        new_layer_details = st.text_area("铺层详情 (每层一行)", value=design[3], height=150)
+
+        st.markdown("#### 2. 试验件视图")
+        imgs_df = pd.read_sql_query("SELECT img_id, image_name FROM design_images WHERE test_id=?", conn,
+                                    params=(selected_test_id,))
+
+        images_to_delete = []
+        if not imgs_df.empty:
+            st.write("已上传的图片 (勾选可删除):")
+            for _, row in imgs_df.iterrows():
+                if st.checkbox(f"删除: {row['image_name']}", key=f"del_img_{row['img_id']}"):
+                    images_to_delete.append(row['img_id'])
+
+        st.write("追加新图片:")
+        if 'update_img_count' not in st.session_state:
+            st.session_state['update_img_count'] = 1
+
+        new_uploaded_images = []
+        for i in range(st.session_state['update_img_count']):
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                img_file = st.file_uploader(f"新图片 {i + 1}", type=["jpg", "png", "jpeg"], key=f"upd_img_f_{i}")
+            with c2:
+                img_name = st.text_input(f"新图片 {i + 1} 描述", key=f"upd_img_n_{i}")
+            new_uploaded_images.append((img_file, img_name))
+
+        if st.button("➕ 增加图片上传位"): st.session_state['update_img_count'] += 1; st.rerun()
+
+        st.markdown("#### 3. 补充或覆盖测试/计算数据 (.dat)")
+        existing_dats = pd.read_sql_query(
+            "SELECT data_source, polarization, data_type, freq_unit, file_name FROM design_dat_files WHERE test_id=?",
+            conn, params=(selected_test_id,))
+
+        existing_dat_dict = {}
+        for _, r in existing_dats.iterrows():
+            existing_dat_dict[(r['data_source'], r['polarization'], r['data_type'])] = r['freq_unit']
+
+        update_dat_uploads = {}
+        update_dat_units = {}
+        tab_calc, tab_test = st.tabs(["💻 计算数据", "🔬 测试数据"])
+
+        def render_update_uploaders(source_name, tab):
+            with tab:
+                c_hh, c_vv = st.columns(2)
+                for config in DAT_CONFIGS:
+                    src, pol, dtype = config
+                    if src != source_name: continue
+
+                    target_col = c_hh if "HH" in pol else c_vv
+                    with target_col:
+                        has_data = config in existing_dat_dict
+                        status_str = "✅ 已上传" if has_data else "❌ 未上传"
+
+                        default_unit = existing_dat_dict.get(config, "GHz")
+                        unit_idx = ["GHz", "MHz", "Hz"].index(default_unit) if default_unit in ["GHz", "MHz",
+                                                                                                "Hz"] else 0
+
+                        st.caption(f"{pol} - {dtype} ({status_str})")
+                        cc1, cc2 = st.columns([3, 1])
+                        with cc1:
+                            file_key = f"upd_{src}_{pol}_{dtype}"
+                            update_dat_uploads[config] = st.file_uploader(f"覆盖/补充", type=['dat', 'txt'], key=file_key,
+                                                                          label_visibility="collapsed")
+                        with cc2:
+                            unit_key = f"upd_unit_{src}_{pol}_{dtype}"
+                            update_dat_units[config] = st.selectbox("单位", ["GHz", "MHz", "Hz"], index=unit_idx,
+                                                                    key=unit_key, label_visibility="collapsed")
+
+        render_update_uploaders("计算", tab_calc)
+        render_update_uploaders("测试", tab_test)
+
+        if st.button("💾 保存所有修改", type="primary"):
+            c = conn.cursor()
+            now = datetime.now()
+
+            try:
+                c.execute("""UPDATE shielding_designs 
+                             SET structure_type=?, thickness_summary=?, layer_details=?, shielding_material=?, update_time=?
+                             WHERE test_id=?""",
+                          (new_structure_type, new_thickness, new_layer_details, new_shielding_mat, now,
+                           selected_test_id))
+
+                for img_id in images_to_delete:
+                    c.execute("DELETE FROM design_images WHERE img_id=?", (img_id,))
+
+                for f, n in new_uploaded_images:
+                    if f:
+                        c.execute("INSERT INTO design_images (test_id, image_name, image_data) VALUES (?, ?, ?)",
+                                  (selected_test_id, n if n else f.name, f.read()))
+
+                for config, file_obj in update_dat_uploads.items():
+                    src, pol, dtype = config
+                    unit = update_dat_units[config]
+
+                    if file_obj:
+                        c.execute(
+                            "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
+                            (selected_test_id, src, pol, dtype))
+                        c.execute("""INSERT INTO design_dat_files 
+                                     (test_id, data_source, polarization, data_type, freq_unit, file_name, file_data)
+                                     VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                  (selected_test_id, src, pol, dtype, unit, file_obj.name, file_obj.read()))
+                    else:
+                        if config in existing_dat_dict and existing_dat_dict[config] != unit:
+                            c.execute("""UPDATE design_dat_files SET freq_unit=? 
+                                         WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?""",
+                                      (unit, selected_test_id, src, pol, dtype))
+
+                conn.commit()
+                st.success("修改保存成功！")
+            except Exception as e:
+                conn.rollback()  # 回滚防护
+                st.error(f"保存失败: {e}")
+            finally:
+                conn.close()
+        else:
+            conn.close()
+
+
+def delete_design_page():
+    designs = get_shielding_designs()
+    if not designs:
+        st.warning("没有可删除的设计数据")
+        return
+
+    design_options = {d[0]: d for d in designs}
+    selected_id = st.selectbox("选择要删除的试验件编号", list(design_options.keys()))
+
+    if st.button("确认删除", type="primary"):
+        conn = create_connection()
+        c = conn.cursor()
+        c.execute("DELETE FROM shielding_designs WHERE test_id=?", (selected_id,))
+        conn.commit()
+        conn.close()
+        st.success(f"试验件 {selected_id} 及其关联的所有数据已删除！")
+        st.rerun()
+
+
+def query_design_page(structure_types, materials, shielding_materials):
+    st.subheader("查询与分析复合材料电磁屏蔽数据")
+
+    with st.form("search_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            s_type = st.selectbox("结构形式", [""] + structure_types)
+        with c2:
+            s_mat = st.selectbox("屏蔽防护材料", [""] + shielding_materials)
+        submitted = st.form_submit_button("查询")
+
+    if submitted or 'search_results' in st.session_state:
+        if submitted:
+            designs = get_shielding_designs(structure_type=s_type if s_type else None,
+                                            shielding_material=s_mat if s_mat else None)
+            st.session_state['search_results'] = designs
+        else:
+            designs = st.session_state['search_results']
+
+        if not designs:
+            st.warning("未找到匹配数据")
+            return
+
+        df = pd.DataFrame(designs, columns=['试验件编号', '结构', '厚度', '铺层', '屏蔽材料', '创建时间', '更新时间'])
+        st.dataframe(df[['试验件编号', '结构', '厚度', '屏蔽材料']])
+
+        selected_tid = st.selectbox("选择试验件查看详情与对比分析", df['试验件编号'].tolist())
+
+        conn = create_connection()
+        details = df[df['试验件编号'] == selected_tid].iloc[0]
+
+        with st.expander(f"📖 基础信息 - {selected_tid}", expanded=True):
+            st.text(details['铺层'])
+
+            imgs = pd.read_sql_query("SELECT image_name, image_data FROM design_images WHERE test_id=?", conn,
+                                     params=(selected_tid,))
+            if not imgs.empty:
+                st.markdown("**试验件视图**")
+                img_cols = st.columns(min(len(imgs), 3))
+                for idx, row in imgs.iterrows():
+                    with img_cols[idx % 3]:
+                        image = Image.open(io.BytesIO(row['image_data']))
+                        st.image(image, caption=row['image_name'], use_container_width=True)
+
+        st.markdown("### 📈 数据交叉对比分析")
+        dat_files = pd.read_sql_query(
+            "SELECT data_source, polarization, data_type, freq_unit, file_name, file_data FROM design_dat_files WHERE test_id=?",
+            conn, params=(selected_tid,))
+        conn.close()
+
+        if dat_files.empty:
+            st.warning("该试验件暂未上传任何数据文件。")
+        else:
+            dat_files['plot_label'] = dat_files['data_source'] + " - " + dat_files['polarization'] + " - " + dat_files[
+                'data_type']
+            options = dat_files['plot_label'].tolist()
+
+            selected_plots = st.multiselect("选择要绘制并在同一坐标系内对比的数据曲线：", options,
+                                            default=options[:2] if len(options) >= 2 else options)
+
+            # 逻辑修复二：提供 Y 轴归一化选项，防止不同量级数据相互覆盖
+            normalize_y = st.checkbox("启用 Y 轴数据归一化 (适用于对比介电常数与屏蔽效能等不同量级数据)", value=False)
+
+            if selected_plots:
+                fig, ax = plt.subplots(figsize=(10, 6))
+
+                for sp in selected_plots:
+                    row = dat_files[dat_files['plot_label'] == sp].iloc[0]
+                    try:
+                        # 逻辑修复一：健壮的解析器，忽略 # 或 % 注释行，并剔除带文本表头的脏数据行
+                        curve_df = pd.read_csv(io.BytesIO(row['file_data']), sep=r'\s+', header=None,
+                                               names=["Freq", "Value"], comment='#')
+                        curve_df['Freq'] = pd.to_numeric(curve_df['Freq'], errors='coerce')
+                        curve_df['Value'] = pd.to_numeric(curve_df['Value'], errors='coerce')
+                        curve_df = curve_df.dropna()
+
+                        freq_data = curve_df['Freq']
+                        if row['freq_unit'] == 'MHz':
+                            freq_data = freq_data / 1000.0
+                        elif row['freq_unit'] == 'Hz':
+                            freq_data = freq_data / 1e9
+
+                        y_data = curve_df['Value']
+                        legend_label = f"{sp} (原始单位:{row['freq_unit']})"
+
+                        # 应用归一化
+                        if normalize_y and y_data.max() != 0:
+                            y_data = y_data / y_data.abs().max()
+                            legend_label += " [归一化]"
+
+                        ax.plot(freq_data, y_data, label=legend_label, linewidth=1.5)
+
+                    except Exception as e:
+                        st.error(f"无法解析数据文件 {row['file_name']}: {str(e)}")
+
+                ax.set_xlabel('统一频率 (GHz)')
+                ylabel_text = '归一化数值' if normalize_y else '数值'
+                ax.set_ylabel(ylabel_text)
+                ax.set_title(f"{selected_tid} 性能数据对比")
+                ax.grid(True, linestyle='--', alpha=0.6)
+                ax.legend()
+
+                st.pyplot(fig)
+                # 逻辑修复三：显式关闭画布，防止在服务器端产生内存泄漏
+                plt.close(fig)
+
+                # 下载区域（修复覆盖问题，动态生成标准化文件名）
+                st.markdown("**批量打包下载数据**")
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                    for sp in selected_plots:
+                        row = dat_files[dat_files['plot_label'] == sp].iloc[0]
+
+                        # 提取安全防覆盖的新名字
+                        ext = os.path.splitext(row['file_name'])[1]
+                        if not ext: ext = ".dat"
+                        clean_pol = row['polarization'].replace('（', '(').replace('）', ')')
+                        standard_filename = f"{selected_tid}_{row['data_source']}_{clean_pol}_{row['data_type']}{ext}"
+
+                        zip_file.writestr(standard_filename, row['file_data'])
+
+                zip_buffer.seek(0)
+                st.download_button("📦 下载选中数据的ZIP包", data=zip_buffer, file_name=f"{selected_tid}_data.zip",
+                                   mime="application/zip")
+
+
 main()
