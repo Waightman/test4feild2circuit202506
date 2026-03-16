@@ -276,7 +276,15 @@ def add_design_page(structure_types, shielding_materials, material_options):
         with cols[0]:
             mat = st.selectbox(f"第{i + 1}层 材料", list(material_options.keys()), key=f"mat_{i}")
         with cols[1]:
-            thk = st.number_input(f"厚度(mm)", 0.01, 0.1, 0.01, key=f"thk_{i}")
+            #thk = st.number_input(f"厚度(mm)", 0.01, 0.1, 0.01, key=f"thk_{i}")
+            thk = st.number_input(
+                f"厚度(mm)",
+                min_value=0.00001,  # 限制最小值大于0（例如0.01mm）
+                max_value=None,  # 取消上限限制
+                value=0.10,  # 默认显示的初始值
+                step=0.01,  # 点击加减按钮时的步长
+                key=f"thk_{i}"
+            )
         with cols[2]:
             # 支持负数角度
             ang = st.number_input(f"角度(°)", min_value=-90, max_value=90, value=0, step=5, key=f"ang_{i}")
@@ -429,7 +437,8 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
         if st.button("➕ 增加图片上传位"): st.session_state['update_img_count'] += 1; st.rerun()
 
-        st.markdown("#### 3. 补充或覆盖测试/计算数据 (.dat)")
+        # ---------------- 替换从这里开始 ----------------
+        st.markdown("#### 3. 补充/覆盖/删除测试计算数据 (.dat)")
         existing_dats = pd.read_sql_query(
             "SELECT data_source, polarization, data_type, freq_unit, file_name FROM design_dat_files WHERE test_id=?",
             conn, params=(selected_test_id,))
@@ -440,6 +449,7 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
         update_dat_uploads = {}
         update_dat_units = {}
+        update_dat_deletes = {}  # 新增：用于记录哪些文件需要被删除
         tab_calc, tab_test = st.tabs(["💻 计算数据", "🔬 测试数据"])
 
         def render_update_uploaders(source_name, tab):
@@ -459,6 +469,12 @@ def update_design_page(structure_types, shielding_materials, material_options):
                                                                                                 "Hz"] else 0
 
                         st.caption(f"{pol} - {dtype} ({status_str})")
+
+                        # === 新增逻辑：如果已经存在数据，提供删除勾选框 ===
+                        if has_data:
+                            del_key = f"del_dat_{src}_{pol}_{dtype}"
+                            update_dat_deletes[config] = st.checkbox("🗑️ 删除此文件", key=del_key)
+
                         cc1, cc2 = st.columns([3, 1])
                         with cc1:
                             file_key = f"upd_{src}_{pol}_{dtype}"
@@ -478,8 +494,8 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
             try:
                 c.execute("""UPDATE shielding_designs 
-                             SET structure_type=?, thickness_summary=?, layer_details=?, shielding_material=?, update_time=?
-                             WHERE test_id=?""",
+                                     SET structure_type=?, thickness_summary=?, layer_details=?, shielding_material=?, update_time=?
+                                     WHERE test_id=?""",
                           (new_structure_type, new_thickness, new_layer_details, new_shielding_mat, now,
                            selected_test_id))
 
@@ -491,33 +507,45 @@ def update_design_page(structure_types, shielding_materials, material_options):
                         c.execute("INSERT INTO design_images (test_id, image_name, image_data) VALUES (?, ?, ?)",
                                   (selected_test_id, n if n else f.name, f.read()))
 
-                for config, file_obj in update_dat_uploads.items():
+                # === 修改逻辑：优先处理文件的删除请求 ===
+                for config in DAT_CONFIGS:
                     src, pol, dtype = config
-                    unit = update_dat_units[config]
+
+                    # 1. 优先判断是否勾选了删除
+                    if update_dat_deletes.get(config, False):
+                        c.execute(
+                            "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
+                            (selected_test_id, src, pol, dtype))
+                        continue  # 如果执行了删除，直接跳过该文件的上传或更新操作
+
+                    # 2. 正常处理覆盖或单位更新
+                    file_obj = update_dat_uploads.get(config)
+                    unit = update_dat_units.get(config)
 
                     if file_obj:
                         c.execute(
                             "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
                             (selected_test_id, src, pol, dtype))
                         c.execute("""INSERT INTO design_dat_files 
-                                     (test_id, data_source, polarization, data_type, freq_unit, file_name, file_data)
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                             (test_id, data_source, polarization, data_type, freq_unit, file_name, file_data)
+                                             VALUES (?, ?, ?, ?, ?, ?, ?)""",
                                   (selected_test_id, src, pol, dtype, unit, file_obj.name, file_obj.read()))
                     else:
                         if config in existing_dat_dict and existing_dat_dict[config] != unit:
                             c.execute("""UPDATE design_dat_files SET freq_unit=? 
-                                         WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?""",
+                                                 WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?""",
                                       (unit, selected_test_id, src, pol, dtype))
 
                 conn.commit()
                 st.success("修改保存成功！")
             except Exception as e:
-                conn.rollback()  # 回滚防护
+                conn.rollback()
                 st.error(f"保存失败: {e}")
             finally:
                 conn.close()
         else:
             conn.close()
+        # ---------------- 替换到这里结束 ----------------
 
 
 def delete_design_page():

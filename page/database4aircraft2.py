@@ -702,48 +702,28 @@ def excel_bulk_file_management():
                     # 强制 Streamlit 重新运行，这样切换到“查看” Tab 时数据就是最新的
                     st.rerun()
 
-
 def indirect_effects_page(operation):
     st.header("雷电间击环境数据库")
 
-    #if operation == "查看数据":
-    #    view_indirect_effects()
     if operation == "查看数据":
         tab_v1, tab_v2 = st.tabs(["波形数据检索", "Excel台账查看"])
         with tab_v1:
-            view_indirect_effects()  # 原有的波形查看
+            view_indirect_effects()
         with tab_v2:
-            excel_bulk_file_management()  # 新增的表格管理（查看部分）
+            excel_bulk_file_management()
     elif operation == "添加数据":
-        # === 修改点：增加第三个 Tab "Excel表格筛选导入" ===
-        tab1, tab2, tab3 = st.tabs(["单条添加", "批量数据文件导入(.dat)", "Excel表格筛选导入"])
+        # 增加了一个新 Tab: "半自动/固定字段批量导入"
+        tab1, tab2, tab3, tab4 = st.tabs(["单条添加", "智能解析批量导入", "固定字段批量导入 (推荐)", "Excel表格筛选导入"])
 
         with tab1:
             add_indirect_effect()
         with tab2:
-            batch_add_indirect_effects()  # 原有的处理 .dat 文件的函数
+            batch_add_indirect_effects()  # 原有的智能全解析模式
         with tab3:
-            excel_bulk_file_management()  # 新增的表格管理（上传部分）
-            ##excel_filter_import()  # <--- 新增的函数
+            hybrid_batch_add_indirect_effects() # 新增的固定字段混合导入模式
+        with tab4:
+            excel_bulk_file_management()
 
-    elif operation == "修改数据":
-        update_indirect_effect()
-    elif operation == "删除数据":
-        delete_indirect_effect()
-
-def indirect_effects_page00(operation):
-    st.header("雷电间击环境数据库")
-
-    # 修改这里，增加 "批量添加"
-    if operation == "查看数据":
-        view_indirect_effects()
-    elif operation == "添加数据":
-        # 使用 tabs 分开单条添加和批量添加，体验更好
-        tab1, tab2 = st.tabs(["单条添加", "批量文件导入"])
-        with tab1:
-            add_indirect_effect()
-        with tab2:
-            batch_add_indirect_effects()  # 新增的函数
     elif operation == "修改数据":
         update_indirect_effect()
     elif operation == "删除数据":
@@ -1117,89 +1097,7 @@ def add_indirect_effect():
             st.error(f"添加失败: {e}")
         finally:
             conn.close()
-def add_indirect_effect00():
-    st.subheader("添加雷电间击环境数据")
 
-    # 使用带边框的容器，视觉上像 Form，但允许内部交互
-    with st.container(border=True):
-        st.markdown("### 新增记录详情")
-
-        aircraft_model = st.text_input("飞机型号*", "")
-        test_point = st.text_input("测试点/连接器编号*", "")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            current_in_out = st.text_input("实验电流入点/出点", "")
-            excitation_waveform = st.selectbox("激励波形", ["A波", "H波"])
-            induced_waveform = st.selectbox("感应波形", ["A波", "H波"])
-        with col2:
-            voltage_probe_point = st.text_input("远端连接器编号", "")
-            test_object_type = st.selectbox("被测对象类型", ["线束", "针脚"])
-            data_domain = st.selectbox("数据域类型", ["时域数据", "频域数据"])
-
-        st.markdown("---")
-        # === 交互核心区域 ===
-        col_type, col_unit = st.columns([1, 1])
-        with col_type:
-            # 使用横向 Radio，比下拉框更好看，且容易理解是“二选一”
-            # 注意：这里没有 form，所以改变选项会立即触发页面刷新(Rerun)
-            data_type_label = st.radio(
-                "数据类型*",
-                ["电压数据 (Voltage)", "电流数据 (Current)"],
-                horizontal=True,
-                key="add_type_radio"
-            )
-            # 解析选择结果
-            data_type = "voltage" if "Voltage" in data_type_label else "current"
-
-        with col_unit:
-            # 根据左侧的选择，动态生成右侧的选项
-            if data_type == "voltage":
-                unit_options = ["kV", "V", "mV"]
-            else:
-                unit_options = ["kA", "A", "mA"]
-
-            data_unit = st.selectbox("数据单位*", unit_options, key="add_unit_select")
-        # ===================
-
-        data_file = st.file_uploader("上传数据文件 (.txt/.dat)", type=["txt", "dat"])
-        st.caption("文件格式要求：两列数据，第一列为时间(s)或频率(MHz)，第二列为数值")
-
-        description = st.text_area("描述", "")
-
-        # 按钮放在容器内部底部
-        submitted = st.button("提交数据", type="primary", use_container_width=True)
-
-    # 逻辑处理：只有点击按钮才执行
-    if submitted:
-        if not aircraft_model or not test_point:
-            st.error("带*的字段是必填项")
-            return
-
-        conn = create_connection()
-        cursor = conn.cursor()
-        try:
-            data_bytes = data_file.read() if data_file else None
-
-            cursor.execute(
-                '''INSERT INTO indirect_effects (
-                    aircraft_model, test_point, current_in_out, voltage_probe_point, 
-                    waveform_type, induced_waveform, test_object_type, data_file, 
-                    data_type, data_unit, description, data_domain
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-                (aircraft_model, test_point, current_in_out, voltage_probe_point,
-                 excitation_waveform, induced_waveform, test_object_type, data_bytes,
-                 data_type, data_unit, description, data_domain)
-            )
-
-            conn.commit()
-            st.success("数据添加成功!")
-            # 可选：稍微延迟后刷新，清空表单
-            # import time; time.sleep(1); st.rerun()
-        except Exception as e:
-            st.error(f"添加数据时出错: {e}")
-        finally:
-            conn.close()
 
 
 
@@ -1504,6 +1402,199 @@ def batch_add_indirect_effects():
             conn.close()
             progress_bar.empty()
 
+
+def hybrid_batch_add_indirect_effects():
+    st.markdown("### 📌 固定字段 + 文件名动态提取导入")
+    st.info("💡 提示：在下方设置本次导入的**共同字段**。如果某个字段留空或选择`<从文件名提取>`，系统将按照规定的 **10个字段顺序** 依次从文件名（以下划线 `_` 分隔）中提取填补缺失项。")
+
+    EXTRACT_FLAG = "<从文件名提取>"
+
+    # === 1. 固定字段设置区域 ===
+    with st.expander("⚙️ 设置本批次固定字段 (展开/折叠)", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            ui_model = st.text_input("1. 飞机型号", placeholder="留空则从文件名提取")
+            ui_test_point = st.text_input("2. 测试点编号", placeholder="留空则从文件名提取")
+            ui_current_io = st.text_input("3. 电流入/出点", placeholder="留空则从文件名提取")
+
+            st.markdown("---")
+            # 特殊控制：是否包含远端连接器
+            has_remote_conn = st.toggle("本批次包含 '4. 远端连接器' 字段", value=False)
+            ui_remote_conn = ""
+            if has_remote_conn:
+                ui_remote_conn = st.text_input("4. 远端连接器", placeholder="留空则从文件名提取")
+
+        with col2:
+            ui_exc = st.selectbox("5. 激励波形", [EXTRACT_FLAG, "A波", "H波"])
+            ui_ind = st.selectbox("6. 感应波形", [EXTRACT_FLAG, "A波", "H波"])
+            ui_obj = st.selectbox("7. 被测对象", [EXTRACT_FLAG, "线束", "针脚"])
+
+        with col3:
+            ui_type = st.selectbox("8. 数据类型", [EXTRACT_FLAG, "voltage", "current"])
+            ui_unit = st.selectbox("9. 单位", [EXTRACT_FLAG, "V", "kV", "mV", "A", "kA", "mA"])
+            ui_domain = st.selectbox("10. 数据域", [EXTRACT_FLAG, "时域数据", "频域数据"])
+            ui_desc = st.text_input("统一备注/描述", value="固定字段批量导入")
+
+    # === 2. 文件上传区域 ===
+    uploaded_files = st.file_uploader("📂 选择数据文件 (.txt/.dat，支持多选)", type=["txt", "dat"], accept_multiple_files=True,
+                                      key="hybrid_uploader")
+
+    if not uploaded_files:
+        if 'hybrid_batch_cache' in st.session_state:
+            del st.session_state['hybrid_batch_cache']
+        return
+
+    file_map = {file.name: file for file in uploaded_files}
+
+    # === 3. 提取逻辑核心 ===
+    if 'hybrid_batch_cache' not in st.session_state or len(st.session_state['hybrid_batch_cache']) != len(
+            uploaded_files):
+        data_list = []
+        for file in uploaded_files:
+            # 去除后缀并按 _ 分割
+            name_no_ext = file.name.rsplit('.', 1)[0]
+            parts = name_no_ext.split('_')
+            part_idx = 0
+
+            # 内部辅助函数：按顺序拿取文件名中的下一个有效片段
+            def get_next_part():
+                nonlocal part_idx
+                if part_idx < len(parts):
+                    val = parts[part_idx]
+                    part_idx += 1
+                    return val.strip()
+                return ""
+
+            row_data = {"文件名": file.name}
+
+            # 严格按照 10 个字段的顺序提取：
+            # 1. 飞机型号
+            row_data["飞机型号"] = ui_model if ui_model else get_next_part()
+            # 2. 测试点编号
+            row_data["测试点"] = ui_test_point if ui_test_point else get_next_part()
+            # 3. 电流入/出点
+            row_data["电流入/出点"] = ui_current_io if ui_current_io else get_next_part()
+
+            # 4. 远端连接器 (根据开关决定是否占用一个位置)
+            if has_remote_conn:
+                row_data["远端连接器"] = ui_remote_conn if ui_remote_conn else get_next_part()
+            else:
+                row_data["远端连接器"] = ""
+
+            # 5. 激励波形
+            row_data["激励波形"] = ui_exc if ui_exc != EXTRACT_FLAG else get_next_part()
+            # 6. 感应波形
+            row_data["感应波形"] = ui_ind if ui_ind != EXTRACT_FLAG else get_next_part()
+            # 7. 被测对象
+            row_data["被测对象"] = ui_obj if ui_obj != EXTRACT_FLAG else get_next_part()
+
+            # 8. 数据类型 (做简单中英映射以兼容数据库)
+            raw_type = ui_type if ui_type != EXTRACT_FLAG else get_next_part()
+            if "电压" in raw_type or "VOLTAGE" in raw_type.upper():
+                row_data["数据类型"] = "voltage"
+            elif "电流" in raw_type or "CURRENT" in raw_type.upper():
+                row_data["数据类型"] = "current"
+            else:
+                row_data["数据类型"] = raw_type
+
+            # 9. 单位
+            row_data["单位"] = ui_unit if ui_unit != EXTRACT_FLAG else get_next_part()
+
+            # 10. 数据域
+            raw_domain = ui_domain if ui_domain != EXTRACT_FLAG else get_next_part()
+            if "频" in raw_domain or "FREQ" in raw_domain.upper():
+                row_data["数据域"] = "频域数据"
+            elif "时" in raw_domain or "TIME" in raw_domain.upper():
+                row_data["数据域"] = "时域数据"
+            else:
+                row_data["数据域"] = raw_domain
+
+            row_data["描述"] = ui_desc
+            data_list.append(row_data)
+
+        st.session_state['hybrid_batch_cache'] = pd.DataFrame(data_list)
+
+    df = st.session_state['hybrid_batch_cache']
+
+    # === 4. 数据确认与编辑表格 ===
+    st.markdown("⬇️ **提取结果预览 (可直接在表格中双击单元格修改):**")
+
+    # 设置列格式以提供下拉选择框，防止非法输入
+    column_config = {
+        "文件名": st.column_config.TextColumn("文件名", disabled=True),
+        "激励波形": st.column_config.SelectboxColumn("激励波形", options=["A波", "H波"]),
+        "感应波形": st.column_config.SelectboxColumn("感应波形", options=["A波", "H波"]),
+        "被测对象": st.column_config.SelectboxColumn("被测对象", options=["线束", "针脚"]),
+        "数据类型": st.column_config.SelectboxColumn("类型", options=["voltage", "current"]),
+        "单位": st.column_config.SelectboxColumn("单位", options=["V", "kV", "mV", "A", "kA", "mA"]),
+        "数据域": st.column_config.SelectboxColumn("数据域", options=["时域数据", "频域数据"])
+    }
+
+    edited_df = st.data_editor(df, column_config=column_config, use_container_width=True, hide_index=True)
+
+    # === 5. 入库操作 ===
+    if st.button(f"🚀 确认无误，将这 {len(uploaded_files)} 条数据入库", type="primary"):
+        success_count, fail_count = 0, 0
+        conn = create_connection()
+        cursor = conn.cursor()
+        progress_bar = st.progress(0)
+
+        try:
+            total = len(edited_df)
+            for index, row in edited_df.iterrows():
+                progress_bar.progress((index + 1) / total)
+
+                # 必填项简单校验
+                if not row["飞机型号"] or not row["测试点"]:
+                    st.toast(f"文件 {row['文件名']} 缺少必填的型号或测试点，已跳过。", icon="⚠️")
+                    fail_count += 1
+                    continue
+
+                file_obj = file_map.get(row["文件名"])
+                if not file_obj:
+                    fail_count += 1
+                    continue
+
+                file_obj.seek(0)
+                data_bytes = file_obj.read()
+
+                try:
+                    cursor.execute(
+                        '''INSERT INTO indirect_effects (
+                            aircraft_model, test_point, current_in_out, voltage_probe_point, 
+                            waveform_type, induced_waveform, test_object_type, data_file, 
+                            data_type, data_unit, description, data_domain
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                        (
+                            row["飞机型号"], row["测试点"], row["电流入/出点"], row["远端连接器"],
+                            row["激励波形"], row["感应波形"], row["被测对象"], data_bytes,
+                            row["数据类型"], row["单位"], row["描述"], row["数据域"]
+                        )
+                    )
+                    success_count += 1
+                except Exception as e:
+                    print(e)
+                    fail_count += 1
+
+            conn.commit()
+
+            if success_count > 0:
+                st.balloons()
+                st.success(f"🎉 批量导入成功！共入库 {success_count} 条数据。")
+                if fail_count > 0:
+                    st.warning(f"有 {fail_count} 条数据导入失败，请检查必填项是否完整。")
+
+                # 成功后清理缓存
+                if 'hybrid_batch_cache' in st.session_state:
+                    del st.session_state['hybrid_batch_cache']
+            else:
+                st.error("导入失败。请检查预览表格中的信息是否完整合法。")
+
+        except Exception as e:
+            st.error(f"数据库操作异常: {e}")
+        finally:
+            conn.close()
+            progress_bar.empty()
 
 def smart_parse_filename(filename):
     """
