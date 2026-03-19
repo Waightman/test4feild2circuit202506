@@ -5,6 +5,7 @@ import numpy as np
 import os
 import io
 import zipfile
+import time
 from datetime import datetime
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -194,6 +195,14 @@ def get_shielding_designs(structure_type=None, thickness=None, shielding_materia
     return designs
 
 
+def clear_query_cache():
+    """清理查询页面的缓存，确保数据增删改后展示最新数据"""
+    if 'search_results' in st.session_state:
+        del st.session_state['search_results']
+    if 'delete_search_results' in st.session_state:
+        del st.session_state['delete_search_results']
+
+
 # ================= UI 页面模块 =================
 
 def main():
@@ -225,7 +234,7 @@ def main():
     elif choice == "修改设计":
         update_design_page(structure_types, shielding_materials, material_options)
     elif choice == "删除设计":
-        delete_design_page()
+        delete_design_page(structure_types, shielding_materials)
     elif choice == "查询设计":
         query_design_page(structure_types, materials, shielding_materials)
 
@@ -276,17 +285,15 @@ def add_design_page(structure_types, shielding_materials, material_options):
         with cols[0]:
             mat = st.selectbox(f"第{i + 1}层 材料", list(material_options.keys()), key=f"mat_{i}")
         with cols[1]:
-            #thk = st.number_input(f"厚度(mm)", 0.01, 0.1, 0.01, key=f"thk_{i}")
             thk = st.number_input(
                 f"厚度(mm)",
-                min_value=0.00001,  # 限制最小值大于0（例如0.01mm）
-                max_value=None,  # 取消上限限制
-                value=0.10,  # 默认显示的初始值
-                step=0.01,  # 点击加减按钮时的步长
+                min_value=0.00001,
+                max_value=None,
+                value=0.10,
+                step=0.01,
                 key=f"thk_{i}"
             )
         with cols[2]:
-            # 支持负数角度
             ang = st.number_input(f"角度(°)", min_value=-90, max_value=90, value=0, step=5, key=f"ang_{i}")
         layers.append(f"第{i + 1}层: {mat}, 厚度: {thk}mm, 角度: {ang}°")
 
@@ -376,11 +383,14 @@ def add_design_page(structure_types, shielding_materials, material_options):
                               (test_id, src, pol, dtype, unit, file_obj.name, file_obj.read()))
 
             conn.commit()
-            st.success("🎉 数据全部入库成功！")
+            clear_query_cache()  # 清理查询缓存
+            st.success("🎉 数据全部入库成功！界面即将重置...")
+            time.sleep(1.5)
+            st.rerun()  # 强制刷新清空残留状态
         except sqlite3.IntegrityError:
             st.error("试验件编号已存在！")
         except Exception as e:
-            conn.rollback()  # 逻辑修复四：增加回滚防止产生脏数据
+            conn.rollback()
             st.error(f"发生错误: {e}")
         finally:
             conn.close()
@@ -437,7 +447,6 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
         if st.button("➕ 增加图片上传位"): st.session_state['update_img_count'] += 1; st.rerun()
 
-        # ---------------- 替换从这里开始 ----------------
         st.markdown("#### 3. 补充/覆盖/删除测试计算数据 (.dat)")
         existing_dats = pd.read_sql_query(
             "SELECT data_source, polarization, data_type, freq_unit, file_name FROM design_dat_files WHERE test_id=?",
@@ -449,7 +458,7 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
         update_dat_uploads = {}
         update_dat_units = {}
-        update_dat_deletes = {}  # 新增：用于记录哪些文件需要被删除
+        update_dat_deletes = {}
         tab_calc, tab_test = st.tabs(["💻 计算数据", "🔬 测试数据"])
 
         def render_update_uploaders(source_name, tab):
@@ -470,7 +479,6 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
                         st.caption(f"{pol} - {dtype} ({status_str})")
 
-                        # === 新增逻辑：如果已经存在数据，提供删除勾选框 ===
                         if has_data:
                             del_key = f"del_dat_{src}_{pol}_{dtype}"
                             update_dat_deletes[config] = st.checkbox("🗑️ 删除此文件", key=del_key)
@@ -507,21 +515,12 @@ def update_design_page(structure_types, shielding_materials, material_options):
                         c.execute("INSERT INTO design_images (test_id, image_name, image_data) VALUES (?, ?, ?)",
                                   (selected_test_id, n if n else f.name, f.read()))
 
-                # === 修改逻辑：优先处理文件的删除请求 ===
                 for config in DAT_CONFIGS:
                     src, pol, dtype = config
-
-                    # 1. 优先判断是否勾选了删除
-                    if update_dat_deletes.get(config, False):
-                        c.execute(
-                            "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
-                            (selected_test_id, src, pol, dtype))
-                        continue  # 如果执行了删除，直接跳过该文件的上传或更新操作
-
-                    # 2. 正常处理覆盖或单位更新
                     file_obj = update_dat_uploads.get(config)
                     unit = update_dat_units.get(config)
 
+                    # 修复更新与删除冲突逻辑
                     if file_obj:
                         c.execute(
                             "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
@@ -530,6 +529,10 @@ def update_design_page(structure_types, shielding_materials, material_options):
                                              (test_id, data_source, polarization, data_type, freq_unit, file_name, file_data)
                                              VALUES (?, ?, ?, ?, ?, ?, ?)""",
                                   (selected_test_id, src, pol, dtype, unit, file_obj.name, file_obj.read()))
+                    elif update_dat_deletes.get(config, False):
+                        c.execute(
+                            "DELETE FROM design_dat_files WHERE test_id=? AND data_source=? AND polarization=? AND data_type=?",
+                            (selected_test_id, src, pol, dtype))
                     else:
                         if config in existing_dat_dict and existing_dat_dict[config] != unit:
                             c.execute("""UPDATE design_dat_files SET freq_unit=? 
@@ -537,6 +540,7 @@ def update_design_page(structure_types, shielding_materials, material_options):
                                       (unit, selected_test_id, src, pol, dtype))
 
                 conn.commit()
+                clear_query_cache()  # 清理查询缓存
                 st.success("修改保存成功！")
             except Exception as e:
                 conn.rollback()
@@ -545,26 +549,66 @@ def update_design_page(structure_types, shielding_materials, material_options):
                 conn.close()
         else:
             conn.close()
-        # ---------------- 替换到这里结束 ----------------
 
 
-def delete_design_page():
-    designs = get_shielding_designs()
-    if not designs:
-        st.warning("没有可删除的设计数据")
-        return
+def delete_design_page(structure_types, shielding_materials):
+    st.subheader("批量删除复合材料电磁屏蔽设计")
 
-    design_options = {d[0]: d for d in designs}
-    selected_id = st.selectbox("选择要删除的试验件编号", list(design_options.keys()))
+    with st.form("delete_search_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            s_type = st.selectbox("结构形式", [""] + structure_types)
+        with c2:
+            s_mat = st.selectbox("屏蔽防护材料", [""] + shielding_materials)
+        submitted = st.form_submit_button("查询")
 
-    if st.button("确认删除", type="primary"):
-        conn = create_connection()
-        c = conn.cursor()
-        c.execute("DELETE FROM shielding_designs WHERE test_id=?", (selected_id,))
-        conn.commit()
-        conn.close()
-        st.success(f"试验件 {selected_id} 及其关联的所有数据已删除！")
-        st.rerun()
+    if submitted or 'delete_search_results' in st.session_state:
+        if submitted:
+            designs = get_shielding_designs(structure_type=s_type if s_type else None,
+                                            shielding_material=s_mat if s_mat else None)
+            st.session_state['delete_search_results'] = designs
+        else:
+            designs = st.session_state['delete_search_results']
+
+        if not designs:
+            st.warning("未找到匹配的设计数据")
+            return
+
+        df = pd.DataFrame(designs, columns=['试验件编号', '结构', '厚度', '铺层', '屏蔽材料', '创建时间', '更新时间'])
+        df.insert(0, '选择删除', False)
+
+        st.markdown("### 勾选需要删除的记录")
+
+        edited_df = st.data_editor(
+            df[['选择删除', '试验件编号', '结构', '厚度', '屏蔽材料', '创建时间']],
+            hide_index=True,
+            column_config={
+                "选择删除": st.column_config.CheckboxColumn("🗑️ 选择删除", default=False)
+            },
+            disabled=['试验件编号', '结构', '厚度', '屏蔽材料', '创建时间'],
+            use_container_width=True,
+            key="delete_data_editor"
+        )
+
+        selected_ids = edited_df[edited_df['选择删除']]['试验件编号'].tolist()
+
+        if selected_ids:
+            st.warning(f"⚠️ 已选择 {len(selected_ids)} 条记录。注意：删除后关联的图片和测试数据文件将被级联清空，无法恢复！")
+            if st.button("确认批量删除", type="primary"):
+                conn = create_connection()
+                c = conn.cursor()
+                try:
+                    c.executemany("DELETE FROM shielding_designs WHERE test_id=?", [(tid,) for tid in selected_ids])
+                    conn.commit()
+                    clear_query_cache()  # 清理查询缓存
+                    st.success(f"✅ 成功删除试验件：{', '.join(selected_ids)}")
+                    time.sleep(1.5)
+                    st.rerun()
+                except Exception as e:
+                    conn.rollback()
+                    st.error(f"删除失败: {e}")
+                finally:
+                    conn.close()
 
 
 def query_design_page(structure_types, materials, shielding_materials):
@@ -627,16 +671,15 @@ def query_design_page(structure_types, materials, shielding_materials):
             selected_plots = st.multiselect("选择要绘制并在同一坐标系内对比的数据曲线：", options,
                                             default=options[:2] if len(options) >= 2 else options)
 
-            # 逻辑修复二：提供 Y 轴归一化选项，防止不同量级数据相互覆盖
             normalize_y = st.checkbox("启用 Y 轴数据归一化 (适用于对比介电常数与屏蔽效能等不同量级数据)", value=False)
 
+            # 修复空ZIP包隐患：将图表渲染和下载按钮统统移入 if 语句内
             if selected_plots:
                 fig, ax = plt.subplots(figsize=(10, 6))
 
                 for sp in selected_plots:
                     row = dat_files[dat_files['plot_label'] == sp].iloc[0]
                     try:
-                        # 逻辑修复一：健壮的解析器，忽略 # 或 % 注释行，并剔除带文本表头的脏数据行
                         curve_df = pd.read_csv(io.BytesIO(row['file_data']), sep=r'\s+', header=None,
                                                names=["Freq", "Value"], comment='#')
                         curve_df['Freq'] = pd.to_numeric(curve_df['Freq'], errors='coerce')
@@ -652,7 +695,6 @@ def query_design_page(structure_types, materials, shielding_materials):
                         y_data = curve_df['Value']
                         legend_label = f"{sp} (原始单位:{row['freq_unit']})"
 
-                        # 应用归一化
                         if normalize_y and y_data.max() != 0:
                             y_data = y_data / y_data.abs().max()
                             legend_label += " [归一化]"
@@ -670,17 +712,14 @@ def query_design_page(structure_types, materials, shielding_materials):
                 ax.legend()
 
                 st.pyplot(fig)
-                # 逻辑修复三：显式关闭画布，防止在服务器端产生内存泄漏
                 plt.close(fig)
 
-                # 下载区域（修复覆盖问题，动态生成标准化文件名）
                 st.markdown("**批量打包下载数据**")
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                     for sp in selected_plots:
                         row = dat_files[dat_files['plot_label'] == sp].iloc[0]
 
-                        # 提取安全防覆盖的新名字
                         ext = os.path.splitext(row['file_name'])[1]
                         if not ext: ext = ".dat"
                         clean_pol = row['polarization'].replace('（', '(').replace('）', ')')

@@ -446,6 +446,17 @@ def main():
 
     operation = st.sidebar.radio("选择操作", ("查询数据", "添加数据", "修改数据", "删除数据"))
 
+    # 【Bug 3 修复】切换操作页面时，清空之前页面的列表缓存，确保每次进入新页面看到最新数据库状态
+    if 'prev_operation' not in st.session_state:
+        st.session_state.prev_operation = operation
+    elif st.session_state.prev_operation != operation:
+        st.session_state.records = []
+        if 'delete_records_induced_current' in st.session_state:
+            del st.session_state['delete_records_induced_current']
+        if 'delete_records_induced_field' in st.session_state:
+            del st.session_state['delete_records_induced_field']
+        st.session_state.prev_operation = operation
+
     # ================= 1. 查询数据 =================
     if operation == "查询数据":
         st.header(f"{database_type} - 查询")
@@ -510,33 +521,31 @@ def main():
                     st.info(f"当前筛选结果共 {len(df_origin)} 条，您已勾选 **{len(selected_rows)}** 条。")
 
                 with col_btn:
-                    if st.button("生成选中数据的压缩包 (ZIP)"):
-                        if selected_rows.empty:
-                            st.error("请先在上方表格中至少勾选一条数据！")
-                        else:
-                            zip_buffer = io.BytesIO()
-                            file_count = 0
+                    # 【Bug 1 修复】移除外层容易导致闪退的 st.button 嵌套
+                    if not selected_rows.empty:
+                        zip_buffer = io.BytesIO()
+                        file_count = 0
 
-                            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                                for index, row in selected_rows.iterrows():
-                                    original_record = df_origin[df_origin['id'] == row['id']].iloc[0]
-                                    fname, fcontent = generate_download_file(original_record, table_name)
+                        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                            for index, row in selected_rows.iterrows():
+                                original_record = df_origin[df_origin['id'] == row['id']].iloc[0]
+                                fname, fcontent = generate_download_file(original_record, table_name)
 
-                                    if fcontent:
-                                        zip_file.writestr(fname, fcontent)
-                                        file_count += 1
+                                if fcontent:
+                                    zip_file.writestr(fname, fcontent)
+                                    file_count += 1
 
-                            zip_buffer.seek(0)
-                            if file_count > 0:
-                                st.success(f"成功打包 {file_count} 个文件！")
-                                st.download_button(
-                                    label="⬇️ 点击下载 ZIP压缩包",
-                                    data=zip_buffer,
-                                    file_name="hirf_data_batch.zip",
-                                    mime="application/zip"
-                                )
-                            else:
-                                st.warning("选中的记录数据为空。")
+                        zip_buffer.seek(0)
+                        if file_count > 0:
+                            st.download_button(
+                                label=f"⬇️ 打包下载已选的 {file_count} 个文件 (ZIP)",
+                                data=zip_buffer,
+                                file_name="hirf_data_batch.zip",
+                                mime="application/zip",
+                                type="primary"
+                            )
+                    else:
+                        st.button("请先在上方表格中勾选数据", disabled=True)
 
             st.markdown("---")
             st.subheader("详细数据视图 (单条查看)")
@@ -622,10 +631,9 @@ def main():
     # ================= 2. 添加数据 (含批量) =================
     elif operation == "添加数据":
         st.header(f"{database_type} - 添加")
-        # --- 修改：增加“高级批量导入”选项卡 ---
         tab_single, tab_batch, tab_adv_batch = st.tabs(["单条添加", "普通批量导入", "高级批量导入(文件名提取)"])
 
-        # --- 单条添加 (已调整字段显示顺序) ---
+        # --- 单条添加 ---
         with tab_single:
             st.markdown("### 📝 单条数据录入")
 
@@ -652,7 +660,6 @@ def main():
             with st.form("add_form_smart"):
                 st.markdown("#### 第二步：确认并完善表单信息")
 
-                # --- 根据规定的顺序排布表单 ---
                 col1, col2 = st.columns(2)
                 with col1:
                     aircraft_model = st.text_input("1. 飞机型号*", value=parsed_info["aircraft_model"])
@@ -663,7 +670,6 @@ def main():
                         stat_idx = stat_opts.index(parsed_info["type"]) if parsed_info["type"] in stat_opts else 0
                         data_stat_type = st.selectbox("3. 数据类型*", stat_opts, index=stat_idx)
 
-                    # 为了排版对齐，感应电流/感应电场动态排布序号
                     idx_offset = 1 if is_field_db else 0
                     antenna_pos = st.text_input(f"{3 + idx_offset}. 实验天线位置*", value=parsed_info["antenna_pos"])
                     ant_type = st.text_input(f"{4 + idx_offset}. 实验天线类型*", "一般天线")
@@ -727,7 +733,7 @@ def main():
                                     time.sleep(1)
                                     st.rerun()
 
-        # --- 普通批量导入 (保持原有不变) ---
+        # --- 普通批量导入 ---
         with tab_batch:
             st.markdown("### 普通批量数据文件导入")
             st.info("提示：批量导入默认设置天线类型为'一般天线'，入射角为'0'，其他将由文件名智能识别。")
@@ -850,15 +856,25 @@ def main():
                         time.sleep(1.5)
                         st.rerun()
 
-        # --- 新增：高级批量导入 (混合提取模式) ---
+        # --- 高级批量导入 ---
         with tab_adv_batch:
             st.markdown("### 🛠️ 高级批量导入 (共同字段设置 + 文件名按序提取)")
             st.info(
                 "在此统一设置本批次数据的 **共同字段**。对于留空或选择【从文件名提取】的字段，程序将严格按照您规定的字段顺序，"
                 "将文件名以 `_` 拆分并对应填入。"
             )
-
-            # UI 输入网格
+            # --- 新增：动态显示字段顺序说明 ---
+            if is_field_db:
+                st.success("""
+                            **📌 当前【感应电场数据库】的文件名提取顺序严格如下（以 `_` 分隔）：** `1.飞机型号` _ `2.接收天线位置` _ `3.数据类型` _ `4.实验天线位置` _ `5.实验天线类型` _ `6.极化方式` _ `7.入射角度` _ `8.频率单位`  
+                            👉 *示例文件名：`机型A_雷达罩_MAX_机背_一般天线_垂直极化_0_MHz.txt`*
+                            """)
+            else:
+                st.success("""
+                            **📌 当前【感应电流数据库】的文件名提取顺序严格如下（以 `_` 分隔）：** `1.飞机型号` _ `2.电流探针位置` _ `3.实验天线位置` _ `4.实验天线类型` _ `5.极化方式` _ `6.入射角度` _ `7.频率单位`  
+                            👉 *示例文件名：`机型A_线缆X_机背_一般天线_垂直极化_0_MHz.txt`*
+                            """)
+            # -----------------------------------
             with st.container(border=True):
                 colA, colB = st.columns(2)
                 with colA:
@@ -878,15 +894,11 @@ def main():
 
             if adv_files:
                 file_map_adv = {f.name: f for f in adv_files}
-                # ==========================================
-                # 👉 在这里添加您的说明文字
-                # 推荐使用 st.caption 显示为灰色的提示小字，视觉上最协调
                 st.caption("💡 说明：因为要读取文件自动生成频率范围，防止页面卡顿，目前采用手动生成预览表的方式。")
-                # ==========================================
+
                 if st.button("🔄 生成数据提取预览表", type="secondary"):
                     data_list_adv = []
 
-                    # 定义规定的严格顺序 (与要求严格一致)
                     if is_field_db:
                         ordered_fields = [
                             ("飞机型号", adv_model, ""),
@@ -921,13 +933,12 @@ def main():
                         row = {"文件名": f.name}
 
                         for field_name, user_val, default_empty in ordered_fields:
-                            # 判定是否需要从文件名提取
                             if user_val == default_empty or str(user_val).strip() == "":
                                 if part_idx < len(parts):
                                     row[field_name] = parts[part_idx]
                                     part_idx += 1
                                 else:
-                                    row[field_name] = ""  # 文件名部分耗尽
+                                    row[field_name] = ""
                             else:
                                 row[field_name] = user_val
 
@@ -935,7 +946,6 @@ def main():
                         row["终止频率"] = e_freq
                         row["备注"] = "高级混合导入"
 
-                        # 兜底确保字段格式一致以适配 col_config
                         if row["极化方式"] not in ["垂直极化", "水平极化"]: row["极化方式"] = "垂直极化"
                         if row["频率单位"] not in ["Hz", "KHz", "MHz", "GHz"]: row["频率单位"] = "MHz"
                         if is_field_db and row["数据类型"] not in ["MAX", "MIN", "AV"]: row["数据类型"] = "MAX"
@@ -944,7 +954,6 @@ def main():
 
                     st.session_state.adv_batch_hirf_cache = pd.DataFrame(data_list_adv)
 
-                # 预览表格与提交逻辑
                 if st.session_state.adv_batch_hirf_cache is not None:
                     df_adv_batch = st.session_state.adv_batch_hirf_cache
 
@@ -1031,7 +1040,7 @@ def main():
                             time.sleep(1.5)
                             st.rerun()
 
-    # ================= 3. 修改数据 (已优化：字段全覆盖) =================
+    # ================= 3. 修改数据 =================
     elif operation == "修改数据":
         st.header(f"{database_type} - 修改")
         records = query_records(conn, table_name)
@@ -1119,6 +1128,8 @@ def main():
                                     st.stop()
                                 else:
                                     final_content = parsed_content
+                                    # 【Bug 2 修复】：重新计算新文件的频率并覆盖旧值
+                                    new_start_f, new_stop_f = calculate_freq_range(final_content)
 
                             cursor = conn.cursor()
 
@@ -1164,27 +1175,98 @@ def main():
     # ================= 4. 删除数据 =================
     elif operation == "删除数据":
         st.header(f"{database_type} - 删除")
-        records = query_records(conn, table_name)
-        if records:
-            id_map = {r['id']: r['aircraft_model'] for r in records}
-            sel_id = st.selectbox(
-                "选择要删除的记录",
-                [r['id'] for r in records],
-                format_func=lambda x: f"ID: {x} | 机型: {id_map.get(x, '未知')}"
-            )
-            to_delete_rec = next((r for r in records if r['id'] == sel_id), None)
-            if to_delete_rec:
-                st.warning(f"即将删除: 【{to_delete_rec['aircraft_model']}】 的数据 (ID: {sel_id})，此操作无法撤销！")
 
-            if st.button("确认删除", type="primary"):
-                if delete_record(conn, table_name, sel_id):
-                    st.toast(f"ID:{sel_id} 删除成功，正在刷新...", icon="🗑️")
-                    st.session_state.records = []
-                    st.session_state.selected_id = None
-                    time.sleep(0.8)
-                    st.rerun()
+        cache_key = f'delete_records_{table_name}'
+
+        if cache_key not in st.session_state:
+            #st.session_state[cache_key] = query_records(conn, table_name)
+            st.session_state[cache_key] = []
+        # --- A. 查询条件输入区域 ---
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            aircraft_model = st.text_input("飞机型号", key="del_model")
+        with col2:
+            probe_field = st.text_input(probe_label, key="del_probe")
+        with col3:
+            if is_field_db:
+                data_stat = st.selectbox("数据类型", ["全部", "MAX", "MIN", "AV"], key="del_stat")
+            else:
+                data_stat = None
+
+        # --- B. 执行查询 ---
+        if st.button("🔍 查询待删除数据", key="del_search_btn"):
+            cond = {}
+            if aircraft_model: cond["aircraft_model"] = aircraft_model
+            if probe_field:
+                key = "current_probe_position" if not is_field_db else "receiving_antenna_position"
+                cond[key] = probe_field
+            if is_field_db and data_stat and data_stat != "全部":
+                cond["data_stat_type"] = data_stat
+
+            st.session_state[cache_key] = query_records(conn, table_name, cond)
+
+        # --- C. 结果显示与批量删除 ---
+        records = st.session_state.get(cache_key, [])
+        if records:
+            df_origin = pd.DataFrame(records)
+
+            df_display = df_origin.copy()
+            if 'data_content' in df_display.columns:
+                df_display = df_display.drop(columns=['data_content'])
+            df_display.insert(0, "选择", False)
+
+            st.markdown("### 🗑️ 数据列表 (请勾选需要删除的数据)")
+
+            disabled_cols = df_display.columns.tolist()
+            disabled_cols.remove("选择")
+
+            editor_key = f"delete_data_editor_{table_name}"
+
+            edited_df = st.data_editor(
+                df_display,
+                column_config={
+                    "选择": st.column_config.CheckboxColumn("选择", help="勾选以删除", default=False),
+                    "id": st.column_config.NumberColumn("ID", disabled=True),
+                    "aircraft_model": st.column_config.TextColumn("飞机型号", disabled=True),
+                    "start_freq": st.column_config.NumberColumn("起始频率", format="%.2f", disabled=True),
+                    "stop_freq": st.column_config.NumberColumn("终止频率", format="%.2f", disabled=True),
+                    "frequency_unit": st.column_config.TextColumn("单位", disabled=True),
+                },
+                disabled=disabled_cols,
+                hide_index=True,
+                use_container_width=True,
+                key=editor_key
+            )
+
+            selected_rows = edited_df[edited_df["选择"] == True]
+
+            with st.expander("⚠️ 批量删除操作区", expanded=True):
+                col_btn, col_info = st.columns([1, 2])
+                with col_info:
+                    if not selected_rows.empty:
+                        st.warning(f"您已勾选 **{len(selected_rows)}** 条数据，删除后将无法恢复！")
+                    else:
+                        st.info(f"当前筛选结果共 {len(df_origin)} 条，请在上方表格中勾选要删除的数据。")
+
+                with col_btn:
+                    if st.button("🚨 确认删除选中数据", type="primary"):
+                        if selected_rows.empty:
+                            st.error("请先在上方表格中勾选数据！")
+                        else:
+                            success_count = 0
+                            for index, row in selected_rows.iterrows():
+                                if delete_record(conn, table_name, row['id']):
+                                    success_count += 1
+
+                            if success_count > 0:
+                                st.success(f"成功删除 {success_count} 条数据！")
+                                st.session_state[cache_key] = query_records(conn, table_name)
+                                if editor_key in st.session_state:
+                                    del st.session_state[editor_key]
+                                time.sleep(1)
+                                st.rerun()
         else:
-            st.info("无数据可删")
+            st.info("未查询到匹配的数据或数据库为空。")
 
     conn.close()
 
