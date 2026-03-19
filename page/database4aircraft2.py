@@ -8,7 +8,7 @@ import io
 import re
 import zipfile
 import numpy as np
-
+import time
 # 设置 Matplotlib 中文字体 (防止中文乱码)
 plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
@@ -482,6 +482,107 @@ def update_lightning_zone():
 
 
 def delete_lightning_zone():
+    st.subheader("批量删除雷电分区数据")
+
+    # 1. 搜索表单：确保只有点击查询后才触发数据提取
+    with st.form("lz_del_search_form"):
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            aircraft_model = st.text_input("输入飞机型号进行搜索", "", key="lz_del_search_model")
+        with col2:
+            st.write("")  # 占位对齐
+            submitted = st.form_submit_button("查询")
+
+    # 初始化结果缓存
+    if 'lz_delete_search_result' not in st.session_state:
+        st.session_state['lz_delete_search_result'] = None
+
+    # 2. 执行查询逻辑
+    if submitted:
+        conn = create_connection()
+        query = "SELECT id, aircraft_model, description, upload_date FROM lightning_zones WHERE 1=1"
+        params = []
+        if aircraft_model:
+            query += " AND aircraft_model LIKE ?"
+            params.append(f"%{aircraft_model}%")
+
+        df = pd.read_sql_query(query, conn, params=params if params else None)
+        conn.close()
+        st.session_state['lz_delete_search_result'] = df
+
+    # 3. 结果显示与批量删除
+    df_origin = st.session_state.get('lz_delete_search_result')
+
+    if df_origin is not None:
+        if df_origin.empty:
+            st.warning("没有找到匹配的记录")
+        else:
+            st.markdown("### 📊 数据列表 (请勾选需要删除的雷电分区)")
+            df_display = df_origin.copy()
+            df_display.insert(0, "选择", False)
+            EDITOR_KEY = "lz_del_data_editor"
+
+            edited_df = st.data_editor(
+                df_display,
+                column_config={
+                    "选择": st.column_config.CheckboxColumn("选择", help="勾选以加入删除列表", default=False),
+                    "id": st.column_config.NumberColumn("ID", disabled=True),
+                    "aircraft_model": st.column_config.TextColumn("飞机型号", disabled=True)
+                },
+                disabled=df_origin.columns.tolist(),
+                hide_index=True,
+                use_container_width=True,
+                key=EDITOR_KEY
+            )
+
+            selected_rows = edited_df[edited_df["选择"] == True]
+            num_selected = len(selected_rows)
+
+            st.markdown("---")
+            # 常驻操作区：模仿 database4aircraft.py 风格
+            with st.expander("⚠️ 批量删除操作区", expanded=True):
+                col_btn, col_info = st.columns([1, 3])
+
+                with col_btn:
+                    # 按钮位于左侧，且根据勾选数量动态禁用
+                    btn_label = f"确认彻底删除 ({num_selected})" if num_selected > 0 else "确认彻底删除"
+                    if st.button(
+                            btn_label,
+                            type="primary",
+                            use_container_width=True,
+                            disabled=(num_selected == 0)
+                    ):
+                        try:
+                            conn = create_connection()
+                            cursor = conn.cursor()
+                            ids_to_delete = selected_rows['id'].tolist()
+                            placeholders = ','.join(['?'] * len(ids_to_delete))
+                            delete_query = f"DELETE FROM lightning_zones WHERE id IN ({placeholders})"
+                            cursor.execute(delete_query, ids_to_delete)
+                            conn.commit()
+
+                            # 清理所有相关缓存
+                            st.session_state['lz_delete_search_result'] = None
+                            if EDITOR_KEY in st.session_state:
+                                del st.session_state[EDITOR_KEY]
+
+                            st.success(f"成功删除 {len(ids_to_delete)} 条主记录及其所有关联视图！")
+                            import time
+                            time.sleep(1)  # 视觉缓冲
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"批量删除记录时出错: {e}")
+                        finally:
+                            conn.close()
+
+                with col_info:
+                    if num_selected > 0:
+                        st.warning(f"注意：将同时删除选中的 {num_selected} 个型号及其所有视图图片！")
+                    else:
+                        st.info("请在上方表格中勾选需要删除的数据。")
+    else:
+        st.info("💡 请输入搜索条件并点击查询。")
+def delete_lightning_zone00():
     st.subheader("批量删除雷电分区数据")
 
     # 1. 搜索区域
@@ -1169,6 +1270,114 @@ def update_indirect_effect():
 
 
 def delete_indirect_effect():
+    st.subheader("批量删除雷电间击环境数据")
+
+    # 1. 搜索表单
+    with st.form("ie_del_search_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            aircraft_model = st.text_input("飞机型号", "", key="del_search_model")
+        with col2:
+            test_point = st.text_input("电流探针测试点", "", key="del_search_tp")
+        submitted = st.form_submit_button("查询")
+
+    if 'ie_delete_search_result' not in st.session_state:
+        st.session_state['ie_delete_search_result'] = None
+
+    # 2. 执行查询逻辑
+    if submitted:
+        conn = create_connection()
+        query = """
+            SELECT id, aircraft_model, test_point, current_in_out, voltage_probe_point, 
+                   waveform_type, induced_waveform, test_object_type, data_domain, 
+                   data_type, data_unit, description, upload_date 
+            FROM indirect_effects WHERE 1=1
+        """
+        params = []
+        if aircraft_model:
+            query += " AND aircraft_model LIKE ?"
+            params.append(f"%{aircraft_model}%")
+        if test_point:
+            query += " AND test_point LIKE ?"
+            params.append(f"%{test_point}%")
+
+        df = pd.read_sql_query(query, conn, params=params if params else None)
+        conn.close()
+        st.session_state['ie_delete_search_result'] = df
+
+    # 3. 结果显示与批量删除
+    df_origin = st.session_state.get('ie_delete_search_result')
+
+    if df_origin is not None:
+        if df_origin.empty:
+            st.warning("没有找到匹配的记录")
+        else:
+            st.markdown("### 📊 数据列表 (请勾选需要删除的数据)")
+            df_display = df_origin.copy()
+            df_display.insert(0, "选择", False)
+            EDITOR_KEY = "ie_del_data_editor"
+
+            edited_df = st.data_editor(
+                df_display,
+                column_config={
+                    "选择": st.column_config.CheckboxColumn("选择", help="勾选以加入删除列表", default=False),
+                    "id": st.column_config.NumberColumn("ID", disabled=True),
+                    "aircraft_model": st.column_config.TextColumn("飞机型号", disabled=True),
+                    "test_point": st.column_config.TextColumn("测试点", disabled=True)
+                },
+                disabled=df_origin.columns.tolist(),
+                hide_index=True,
+                use_container_width=True,
+                key=EDITOR_KEY
+            )
+
+            selected_rows = edited_df[edited_df["选择"] == True]
+            num_selected = len(selected_rows)
+
+            st.markdown("---")
+            # 常驻操作区：按钮在左，动态禁用
+            with st.expander("⚠️ 批量删除操作区", expanded=True):
+                col_btn, col_info = st.columns([1, 3])
+
+                with col_btn:
+                    btn_label = f"确认删除 ({num_selected})" if num_selected > 0 else "确认删除"
+                    if st.button(
+                            btn_label,
+                            type="primary",
+                            use_container_width=True,
+                            disabled=(num_selected == 0)
+                    ):
+                        try:
+                            conn = create_connection()
+                            cursor = conn.cursor()
+                            ids_to_delete = selected_rows['id'].tolist()
+                            placeholders = ','.join(['?'] * len(ids_to_delete))
+                            delete_query = f"DELETE FROM indirect_effects WHERE id IN ({placeholders})"
+                            cursor.execute(delete_query, ids_to_delete)
+                            conn.commit()
+
+                            # 清理缓存
+                            st.session_state['ie_delete_search_result'] = None
+                            if EDITOR_KEY in st.session_state:
+                                del st.session_state[EDITOR_KEY]
+
+                            st.success(f"成功删除 {len(ids_to_delete)} 条记录！")
+                            import time
+                            time.sleep(1)  # 视觉缓冲
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"批量删除记录时出错: {e}")
+                        finally:
+                            conn.close()
+
+                with col_info:
+                    if num_selected > 0:
+                        st.warning(f"⚠️ 您已选中 **{num_selected}** 条数据。删除后将无法恢复！")
+                    else:
+                        st.info("请在上方表格中勾选需要删除的数据。")
+    else:
+        st.info("💡 请输入查询条件搜索需要管理的数据。")
+def delete_indirect_effect00():
     st.subheader("批量删除雷电间击环境数据")
 
     # 1. 搜索区域

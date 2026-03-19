@@ -1173,14 +1173,15 @@ def main():
                             st.error(f"更新失败: {e}")
 
     # ================= 4. 删除数据 =================
+    # ================= 4. 删除数据 =================
     elif operation == "删除数据":
         st.header(f"{database_type} - 删除")
 
         cache_key = f'delete_records_{table_name}'
 
         if cache_key not in st.session_state:
-            #st.session_state[cache_key] = query_records(conn, table_name)
             st.session_state[cache_key] = []
+
         # --- A. 查询条件输入区域 ---
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -1222,6 +1223,7 @@ def main():
 
             editor_key = f"delete_data_editor_{table_name}"
 
+            # 渲染表格并获取编辑后的结果
             edited_df = st.data_editor(
                 df_display,
                 column_config={
@@ -1238,33 +1240,41 @@ def main():
                 key=editor_key
             )
 
+            # 实时计算选中的行数
             selected_rows = edited_df[edited_df["选择"] == True]
+            num_selected = len(selected_rows)
 
+            # --- D. 改进的操作区：按钮在左侧且动态禁用 ---
             with st.expander("⚠️ 批量删除操作区", expanded=True):
-                col_btn, col_info = st.columns([1, 2])
-                with col_info:
-                    if not selected_rows.empty:
-                        st.warning(f"您已勾选 **{len(selected_rows)}** 条数据，删除后将无法恢复！")
-                    else:
-                        st.info(f"当前筛选结果共 {len(df_origin)} 条，请在上方表格中勾选要删除的数据。")
+                col_btn, col_info = st.columns([1, 2])  # 按钮在左侧
 
                 with col_btn:
-                    if st.button("🚨 确认删除选中数据", type="primary"):
-                        if selected_rows.empty:
-                            st.error("请先在上方表格中勾选数据！")
-                        else:
-                            success_count = 0
-                            for index, row in selected_rows.iterrows():
-                                if delete_record(conn, table_name, row['id']):
-                                    success_count += 1
+                    # 关键修改：增加 disabled 参数，根据选中数量判断
+                    if st.button(
+                            f"🚨 确认删除 ({num_selected})",
+                            type="primary",
+                            use_container_width=True,
+                            disabled=(num_selected == 0)  # 核心逻辑：没勾选就置灰
+                    ):
+                        success_count = 0
+                        for index, row in selected_rows.iterrows():
+                            if delete_record(conn, table_name, row['id']):
+                                success_count += 1
 
-                            if success_count > 0:
-                                st.success(f"成功删除 {success_count} 条数据！")
-                                st.session_state[cache_key] = query_records(conn, table_name)
-                                if editor_key in st.session_state:
-                                    del st.session_state[editor_key]
-                                time.sleep(1)
-                                st.rerun()
+                        if success_count > 0:
+                            st.success(f"成功删除 {success_count} 条数据！")
+                            # 清理缓存确保刷新
+                            st.session_state[cache_key] = query_records(conn, table_name)
+                            if editor_key in st.session_state:
+                                del st.session_state[editor_key]
+                            time.sleep(1)
+                            st.rerun()
+
+                with col_info:
+                    if num_selected > 0:
+                        st.warning(f"注意：您已勾选 {num_selected} 条数据，删除后将无法恢复！")
+                    else:
+                        st.info(f"当前查询到 {len(df_origin)} 条记录。请在上方表格中勾选数据。")
         else:
             st.info("未查询到匹配的数据或数据库为空。")
 

@@ -221,7 +221,16 @@ def main():
 
     menu_options = ["添加新设计", "修改设计", "删除设计", "查询设计", "材料管理"]
     choice = st.sidebar.radio("选择操作类型", menu_options)
+    # =============== 在这里插入新增的监听代码 ===============
+    # 记录上一次所处的菜单页面
+    if 'last_menu_choice' not in st.session_state:
+        st.session_state['last_menu_choice'] = choice
 
+    # 如果发现当前选择的菜单和上次记录的不一样，说明用户切换了页面
+    if st.session_state['last_menu_choice'] != choice:
+        clear_query_cache()  # 调用我们之前写好的清理函数
+        st.session_state['last_menu_choice'] = choice
+    # ========================================================
     materials = get_materials()
     material_options = {f"{m[1]} ({m[2]})": m[0] for m in materials}
     structure_types = ["单向带层板", "织物层板", "织物夹层", "层压", "蜂窝夹层", "泡沫夹层"]
@@ -552,6 +561,96 @@ def update_design_page(structure_types, shielding_materials, material_options):
 
 
 def delete_design_page(structure_types, shielding_materials):
+    st.subheader("批量删除复合材料电磁屏蔽设计")
+
+    # 1. 查询表单
+    with st.form("delete_search_form"):
+        c1, c2 = st.columns(2)
+        with c1:
+            s_type = st.selectbox("结构形式", [""] + structure_types)
+        with c2:
+            s_mat = st.selectbox("屏蔽防护材料", [""] + shielding_materials)
+        submitted = st.form_submit_button("查询")
+
+    # 2. 查询结果处理
+    if submitted:
+        designs = get_shielding_designs(structure_type=s_type if s_type else None,
+                                        shielding_material=s_mat if s_mat else None)
+        st.session_state['delete_search_results'] = designs
+
+    designs = st.session_state.get('delete_search_results', [])
+
+    if not designs:
+        st.info("💡 请先通过上方条件查询需要管理的数据记录。")
+        return
+
+    # 3. 数据展示与勾选
+    df = pd.DataFrame(designs, columns=['试验件编号', '结构', '厚度', '铺层', '屏蔽材料', '创建时间', '更新时间'])
+    df.insert(0, '选择删除', False)
+
+    # 固定的 Editor Key 确保状态可被清理
+    EDITOR_KEY = "delete_data_editor_v2"
+
+    st.markdown("### 📋 待处理记录列表")
+    edited_df = st.data_editor(
+        df[['选择删除', '试验件编号', '结构', '厚度', '屏蔽材料', '创建时间']],
+        hide_index=True,
+        column_config={
+            "选择删除": st.column_config.CheckboxColumn("🗑️ 勾选", default=False)
+        },
+        disabled=['试验件编号', '结构', '厚度', '屏蔽材料', '创建时间'],
+        use_container_width=True,
+        key=EDITOR_KEY
+    )
+
+    # 4. 常驻操作区 (模仿 database4aircraft3.py 风格)
+    selected_ids = edited_df[edited_df['选择删除'] == True]['试验件编号'].tolist()
+    num_selected = len(selected_ids)
+
+    st.markdown("---")
+    with st.expander("⚠️ 批量删除操作区", expanded=True):
+        # 将按钮放在左侧列 (col_btn 在前)
+        col_btn, col_info = st.columns([1, 3])
+
+        with col_btn:
+            # 按钮标签动态显示选中数量
+            btn_label = f"🚨 确认删除 ({num_selected})" if num_selected > 0 else "🚨 确认删除"
+
+            # 执行删除按钮
+            if st.button(
+                    btn_label,
+                    type="primary",
+                    use_container_width=True,
+                    disabled=(num_selected == 0)  # 未勾选时置灰禁用
+            ):
+                conn = create_connection()
+                c = conn.cursor()
+                try:
+                    # 批量删除
+                    c.executemany("DELETE FROM shielding_designs WHERE test_id=?", [(tid,) for tid in selected_ids])
+                    conn.commit()
+
+                    # 彻底清理状态：清理查询结果和编辑器缓存
+                    if 'delete_search_results' in st.session_state:
+                        del st.session_state['delete_search_results']
+                    if EDITOR_KEY in st.session_state:
+                        del st.session_state[EDITOR_KEY]
+
+                    st.success(f"✅ 成功删除 {num_selected} 条记录！")
+                    time.sleep(1)
+                    st.rerun()  # 强制重绘页面以反映最新数据库状态
+                except Exception as e:
+                    conn.rollback()
+                    st.error(f"删除失败: {e}")
+                finally:
+                    conn.close()
+
+        with col_info:
+            if num_selected > 0:
+                st.warning(f"您已勾选 **{num_selected}** 条数据，删除后关联的文件和图片将无法恢复！")
+            else:
+                st.info("当前筛选结果共 {} 条，请在上方表格中勾选要删除的数据。".format(len(df)))
+def delete_design_page00(structure_types, shielding_materials):
     st.subheader("批量删除复合材料电磁屏蔽设计")
 
     with st.form("delete_search_form"):
